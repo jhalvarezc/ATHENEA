@@ -1,0 +1,6 @@
+guia,estado,limite_entrega,costo_flete
+guia_1001,en_transito,20260608,25000
+guia_1002,entregado,20260605,18000
+guia_1003,en_novedad,20260601,32000
+guia_1004,en_transito,20260605,21000
+guia_1005,en_novedad,20260615,45000
