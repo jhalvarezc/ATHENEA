@@ -1,0 +1,498 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mejorador Automático de Prompts ✨</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f4f9;
+        }
+
+        .container-main {
+            max-width: 900px;
+        }
+
+        .input-group label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 700;
+        }
+
+        .input-group textarea {
+            border: 1px solid #cbd5e1;
+            transition: all 0.2s;
+        }
+
+        .input-group textarea:focus {
+            border-color: #4c51bf;
+            box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.2);
+            outline: none;
+        }
+
+        #prompt-final {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            min-height: 120px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Custom Scrollbar for history */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 10px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+
+<body class="p-4 md:p-8">
+
+    <div class="container-main mx-auto">
+        <!-- Grid Layout: Main App + History Sidebar -->
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+            <!-- MAIN APP AREA (2/3 width on large screens) -->
+            <div class="lg:col-span-2 bg-white p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100">
+                <header class="text-center mb-8">
+                    <h1 class="text-4xl font-extrabold text-indigo-700 mb-2">✨ Optimizador de Prompts</h1>
+                    <p class="text-gray-600">Diseña instrucciones profesionales. El sistema mejorará tu prompt sin
+                        responder a la consulta.</p>
+                </header>
+
+                <div class="space-y-6">
+                    <!-- Input de Instrucción del Sistema (Azul) -->
+                    <div class="input-group p-5 bg-blue-50 rounded-xl shadow-sm border border-blue-100">
+                        <label for="system_prompt" class="text-blue-700 text-lg">⚙️ Reglas de Optimización
+                            (Opcional)</label>
+                        <p class="text-xs text-blue-600 mb-3">Añade directrices específicas sobre cómo quieres que se
+                            transforme tu prompt.</p>
+                        <textarea id="system_prompt" rows="2" class="w-full p-4 rounded-lg text-sm"
+                            placeholder="Ej: Haz que el prompt final sea muy técnico y use formato Markdown..."></textarea>
+                    </div>
+
+                    <!-- Google Search Toggle (Amarillo) -->
+                    <div
+                        class="input-group p-4 bg-yellow-50 rounded-xl shadow-sm border border-yellow-100 flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <span class="text-2xl">🌐</span>
+                            <div>
+                                <label class="text-yellow-800 text-md font-bold mb-0 leading-none">Contexto de
+                                    Búsqueda</label>
+                                <p class="text-xs text-yellow-700">Usa datos reales de la web para enriquecer el prompt.
+                                </p>
+                            </div>
+                        </div>
+                        <label class="relative inline-flex items-center cursor-pointer">
+                            <input type="checkbox" id="search_grounding_toggle" checked class="sr-only peer">
+                            <div
+                                class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500">
+                            </div>
+                        </label>
+                    </div>
+
+                    <!-- Input de Prompt Básico (Púrpura) -->
+                    <div class="input-group p-5 bg-purple-50 rounded-xl shadow-sm border border-purple-100">
+                        <label for="prompt_basico" class="text-purple-700 text-xl font-bold">🎯 Tu Idea o Prompt
+                            Básico</label>
+                        <p class="text-sm text-purple-600 mb-3">Escribe lo que quieres pedirle a la IA para que sea
+                            optimizado.</p>
+                        <textarea id="prompt_basico" rows="4" class="w-full p-4 rounded-lg text-lg"
+                            placeholder="Escribe aquí tu consulta inicial...">Dame un resumen del último informe de ganancias de Google.</textarea>
+                    </div>
+                </div>
+
+                <!-- Botones de Acción -->
+                <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mt-8">
+                    <button onclick="enviarPromptAGemini()" id="btn-enviar"
+                        class="flex-grow px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        <span>✨ Generar Prompt Optimizado</span>
+                    </button>
+                    <button onclick="limpiarPrompt()"
+                        class="w-full sm:w-auto px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all">
+                        🗑️ Reiniciar
+                    </button>
+                </div>
+
+                <!-- Output Section -->
+                <div id="output" class="mt-10 p-6 bg-slate-50 rounded-2xl border border-indigo-100 shadow-inner hidden">
+                    <div class="flex flex-wrap gap-2 items-center justify-between mb-4">
+                        <h2 class="text-xl font-bold text-gray-800">✅ Prompt Estructurado</h2>
+                        <span
+                            class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider border border-indigo-100">Listo
+                            para usar</span>
+                    </div>
+                    <div class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm relative group">
+                        <pre id="prompt-final" class="text-gray-700 text-sm leading-relaxed font-sans"></pre>
+                    </div>
+
+                    <div class="flex gap-3 mt-4">
+                        <button onclick="copiarPrompt()"
+                            class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
+                            </svg>
+                            Copiar
+                        </button>
+                        <button onclick="guardarPromptEnHistorial()" id="btn-guardar"
+                            class="flex-1 px-4 py-3 bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                            </svg>
+                            Guardar
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- HISTORY SIDEBAR (1/3 width) -->
+            <div
+                class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-xl border border-slate-100 flex flex-col h-[600px] lg:h-auto">
+                <h3 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
+                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Tus Prompts
+                </h3>
+                <p class="text-xs text-gray-500 mb-4">Guardados de forma segura en la nube.</p>
+
+                <div id="history-container" class="flex-1 overflow-y-auto custom-scroll pr-2 space-y-3">
+                    <div class="flex items-center justify-center h-full">
+                        <div
+                            class="loader w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Logic -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, onSnapshot, deleteDoc, doc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Initialize Firebase
+        const firebaseConfig = JSON.parse(__firebase_config);
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'prompt-optimizer';
+
+        let currentUser = null;
+        let unsubscribeHistory = null;
+
+        // Authentication
+        const initAuth = async () => {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+            } catch (error) {
+                console.error("Auth Error:", error);
+                document.getElementById('history-container').innerHTML = '<p class="text-sm text-red-500 text-center">Error de conexión.</p>';
+            }
+        };
+
+        initAuth();
+
+        // Listen for Auth State
+        onAuthStateChanged(auth, (user) => {
+            currentUser = user;
+            if (user) {
+                listenToHistory();
+            }
+        });
+
+        // Save to Database
+        window.guardarPromptEnHistorial = async function () {
+            if (!currentUser) return showCustomAlert("No estás autenticado.", "error");
+
+            const finalPrompt = document.getElementById('prompt-final').textContent;
+            const originalIdea = document.getElementById('prompt_basico').value;
+            const btn = document.getElementById('btn-guardar');
+
+            if (!finalPrompt) return;
+
+            btn.disabled = true;
+            btn.innerHTML = `<svg class="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Guardando...`;
+
+            try {
+                await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'saved_prompts'), {
+                    idea: originalIdea.substring(0, 150) + (originalIdea.length > 150 ? '...' : ''),
+                    prompt: finalPrompt,
+                    timestamp: serverTimestamp()
+                });
+                showCustomAlert("✅ Guardado en tu historial");
+            } catch (error) {
+                console.error("Save error:", error);
+                showCustomAlert("Error al guardar.", "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg> Guardar`;
+            }
+        };
+
+        // Delete from Database
+        window.eliminarPrompt = async function (docId) {
+            if (!currentUser) return;
+            try {
+                await deleteDoc(doc(db, 'artifacts', appId, 'users', currentUser.uid, 'saved_prompts', docId));
+                showCustomAlert("🗑️ Eliminado");
+            } catch (e) {
+                showCustomAlert("Error al eliminar", "error");
+            }
+        };
+
+        // Load and Listen to Database
+        function listenToHistory() {
+            const historyContainer = document.getElementById('history-container');
+            const promptsRef = collection(db, 'artifacts', appId, 'users', currentUser.uid, 'saved_prompts');
+
+            if (unsubscribeHistory) unsubscribeHistory();
+
+            unsubscribeHistory = onSnapshot(promptsRef, (snapshot) => {
+                if (snapshot.empty) {
+                    historyContainer.innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-xl">
+                        <span class="text-3xl mb-2">👻</span>
+                        <p class="text-sm text-slate-500 font-medium">No tienes prompts guardados aún.</p>
+                        <p class="text-xs text-slate-400 mt-1">Tus optimizaciones aparecerán aquí.</p>
+                    </div>`;
+                    return;
+                }
+
+                historyContainer.innerHTML = '';
+
+                // Sort client-side to avoid index requirements
+                const docs = snapshot.docs.map(d => ({ id: d.id, ...d.data() }))
+                    .sort((a, b) => (b.timestamp?.seconds || 0) - (a.timestamp?.seconds || 0));
+
+                docs.forEach(data => {
+                    const item = document.createElement('div');
+                    item.className = "bg-slate-50 p-4 rounded-xl border border-slate-100 relative group hover:border-indigo-300 transition-colors fade-in";
+
+                    // Truncate logic
+                    const truncatedPrompt = data.prompt.length > 80 ? data.prompt.substring(0, 80) + '...' : data.prompt;
+
+                    item.innerHTML = `
+                    <div class="flex justify-between items-start mb-1">
+                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Idea base</span>
+                        <button onclick="eliminarPrompt('${data.id}')" class="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Eliminar">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        </button>
+                    </div>
+                    <p class="text-xs font-bold text-slate-700 line-clamp-1 mb-2">${data.idea}</p>
+                    <div class="bg-white p-2 rounded text-[11px] text-slate-500 border border-slate-100 italic">
+                        "${truncatedPrompt}"
+                    </div>
+                    <div class="mt-3 flex gap-2">
+                        <button onclick="cargarEnPantalla('${data.id}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded">Ver/Usar</button>
+                        <button onclick="copiarSilencioso('${data.id}')" class="text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-200 px-2 py-1 rounded">Copiar</button>
+                    </div>
+                    <div id="full-data-${data.id}" class="hidden">${encodeURIComponent(data.prompt)}</div>
+                `;
+                    historyContainer.appendChild(item);
+                });
+            }, (error) => {
+                console.error("Firestore Listen Error:", error);
+            });
+        }
+
+        // Helper functions for history items
+        window.cargarEnPantalla = (id) => {
+            const encodedText = document.getElementById(`full-data-${id}`).textContent;
+            const text = decodeURIComponent(encodedText);
+            document.getElementById('prompt-final').textContent = text;
+            document.getElementById('output').classList.remove('hidden');
+            document.getElementById('output').classList.add('fade-in');
+            window.scrollTo({ top: document.getElementById('output').offsetTop - 50, behavior: 'smooth' });
+        };
+
+        window.copiarSilencioso = (id) => {
+            const encodedText = document.getElementById(`full-data-${id}`).textContent;
+            const text = decodeURIComponent(encodedText);
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            document.execCommand('copy');
+            document.body.removeChild(el);
+            showCustomAlert("📋 Prompt copiado");
+        };
+    </script>
+
+    <script>
+        const apiKey = "";
+        const MODEL_ID = 'gemini-2.5-flash-preview-09-2025';
+
+        const DEFAULT_SYSTEM_PROMPT = `ERES UN INGENIERO DE PROMPTS DE ÉLITE. 
+Tu única tarea es tomar el prompt básico del usuario y transformarlo en una instrucción MAESTRA para una IA. 
+
+REGLAS CRÍTICAS:
+1. NO RESPONDAS A LA PREGUNTA DEL USUARIO. Si el usuario pregunta "Cómo hacer pan", NO des la receta. En su lugar, crea un prompt detallado para que otra IA dé la mejor receta posible.
+2. ESTRUCTURA: El resultado debe incluir [ROL], [CONTEXTO], [INSTRUCCIÓN DETALLADA], [RESTRICCIONES] y [FORMATO DE SALIDA].
+3. LENGUAJE: Debe ser claro, imperativo y profesional.
+4. SALIDA: Entrega ÚNICAMENTE el texto del nuevo prompt mejorado. No añadas "Aquí tienes tu prompt" ni introducciones.
+5. IDIOMA: Español.`;
+
+        async function fetchWithBackoff(url, options, retries = 5, delay = 1000) {
+            for (let i = 0; i < retries; i++) {
+                try {
+                    const response = await fetch(url, options);
+                    if (response.ok) return response;
+                    if (response.status === 401) throw new Error("Error 401: No autorizado. La API Key no es válida.");
+                    if (response.status === 429 && i < retries - 1) {
+                        await new Promise(r => setTimeout(r, delay));
+                        delay *= 2;
+                        continue;
+                    }
+                    throw new Error(`Error en la API: ${response.status}`);
+                } catch (e) {
+                    if (i === retries - 1 || e.message.includes("401")) throw e;
+                    await new Promise(r => setTimeout(r, delay));
+                    delay *= 2;
+                }
+            }
+        }
+
+        async function enviarPromptAGemini() {
+            const basicPrompt = document.getElementById('prompt_basico').value.trim();
+            const customSystem = document.getElementById('system_prompt').value.trim();
+            const searchEnabled = document.getElementById('search_grounding_toggle').checked;
+            const outputContainer = document.getElementById('output');
+            const outputText = document.getElementById('prompt-final');
+            const btn = document.getElementById('btn-enviar');
+
+            if (!basicPrompt) {
+                showCustomAlert("Por favor, escribe un prompt básico.", "error");
+                return;
+            }
+
+            outputContainer.classList.remove('hidden');
+            btn.disabled = true;
+            outputText.innerHTML = '<div class="flex items-center justify-center py-12"><svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+
+            const combinedSystemInstruction = customSystem
+                ? `${DEFAULT_SYSTEM_PROMPT}\n\nADICIONAL: El usuario quiere estas mejoras específicas: ${customSystem}`
+                : DEFAULT_SYSTEM_PROMPT;
+
+            const payload = {
+                contents: [{ parts: [{ text: `Optimiza este prompt: "${basicPrompt}"` }] }],
+                systemInstruction: {
+                    parts: [{ text: combinedSystemInstruction }]
+                },
+                ...(searchEnabled && { tools: [{ "google_search": {} }] })
+            };
+
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${MODEL_ID}:generateContent?key=${apiKey}`;
+
+            try {
+                const resp = await fetchWithBackoff(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await resp.json();
+
+                if (data.error) {
+                    throw new Error(data.error.message || "Error en la respuesta de la API");
+                }
+
+                const resultText = data.candidates?.[0]?.content?.parts?.[0]?.text || "No se pudo generar la optimización.";
+
+                outputText.textContent = resultText.trim();
+                showCustomAlert("¡Prompt refinado con éxito!");
+            } catch (e) {
+                outputText.textContent = `Error: ${e.message}. Asegúrate de tener conexión.`;
+                showCustomAlert("Error al generar.", "error");
+            } finally {
+                btn.disabled = false;
+            }
+        }
+
+        window.copiarPrompt = function () {
+            const text = document.getElementById('prompt-final').textContent;
+            const el = document.createElement('textarea');
+            el.value = text;
+            document.body.appendChild(el);
+            el.select();
+            try {
+                document.execCommand('copy');
+                showCustomAlert("¡Copiado con éxito!");
+            } catch (err) {
+                showCustomAlert("Error al copiar", "error");
+            }
+            document.body.removeChild(el);
+        }
+
+        window.limpiarPrompt = function () {
+            document.getElementById('prompt_basico').value = '';
+            document.getElementById('system_prompt').value = '';
+            document.getElementById('output').classList.add('hidden');
+            showCustomAlert("Campos reiniciados.");
+        }
+
+        window.showCustomAlert = function (msg, type = "success") {
+            const existing = document.getElementById('custom-toast');
+            if (existing) existing.remove();
+
+            const alert = document.createElement('div');
+            alert.id = 'custom-toast';
+            const color = type === "error" ? "bg-red-600" : "bg-slate-800";
+            alert.className = `fixed bottom-8 left-1/2 -translate-x-1/2 ${color} text-white px-6 py-3 rounded-full shadow-2xl z-50 fade-in font-medium text-sm flex items-center gap-2`;
+            alert.innerHTML = type === "error" ? `⚠️ ${msg}` : msg;
+
+            document.body.appendChild(alert);
+
+            setTimeout(() => {
+                alert.style.opacity = '0';
+                alert.style.transform = 'translate(-50%, 10px)';
+                alert.style.transition = 'all 0.4s ease';
+                setTimeout(() => alert.remove(), 400);
+            }, 3000);
+        }
+    </script>
+
+</body>
+
+</html>
