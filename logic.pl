@@ -23,3 +23,22 @@ alerta_critica(Guia) :-
     estado_envio(Guia, en_novedad),
     costo_flete(Guia, Costo),
     Costo > 30000.
+% =================================================================
+% NUEVAS REGLAS DE NEGOCIO AVANZADAS
+% =================================================================
+
+% Regla C: Alerta de Ruta Crítica (Alta prioridad con Latencia Operativa)
+% Un envío es considerado "Ruta Crítica" si está 'en_novedad' y su costo de flete 
+% supera los $3,000, lo que exige atención prioritaria e inmediata de la gerencia.
+alerta_ruta_critica(Guia) :-
+    estado_envio(Guia, en_novedad),
+    costo_flete(Guia, Costo),
+    Costo > 3000.
+
+% Regla D: Alerta de Desviación de Tarifas Estándar
+% El negocio establece que ningún envío en tránsito ordinario debería superar 
+% un costo de flete de $2,500. Si lo supera, se dispara una alerta de auditoría por tarifa excesiva.
+alerta_tarifa_excesiva(Guia) :-
+    estado_envio(Guia, en_transito),
+    costo_flete(Guia, Costo),
+    Costo > 2500.   
