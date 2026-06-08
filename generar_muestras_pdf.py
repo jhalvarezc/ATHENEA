@@ -1,11 +1,13 @@
 # generar_muestras_pdf.py - Fábrica de Facturas PDF de Prueba para ATHENEA
+# modules/utils/generar_muestras_pdf.py
 import os
 import random
+import sys
 from datetime import datetime, timedelta
 from fpdf import FPDF
 
 # 1. Configuración de la carpeta destino
-CARPETA_PDFS = "pdfs_pendientes"
+CARPETA_PDFS = os.path.join("storage", "pdfs_pendientes")
 if not os.path.exists(CARPETA_PDFS):
     os.makedirs(CARPETA_PDFS)
 

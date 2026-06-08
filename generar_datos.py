@@ -110,5 +110,5 @@ df['destino_latitude'] = df['destino'].map(lambda x: ciudades_hub[x]['lat'])
 df['destino_longitude'] = df['destino'].map(lambda x: ciudades_hub[x]['lon'])
 
 # Guardar la base de datos master
-df.to_csv('envios.csv', index=False)
-print(f"📦 ¡Data Lake generado con éxito! Se han creado {len(df)} registros en 'envios.csv'.")
+df.to_csv('storage/data/envios.csv', index=False)
+print(f"📦 ¡Data Lake generado con éxito! Se han creado {len(df)} registros en 'storage/data/envios.csv'.")

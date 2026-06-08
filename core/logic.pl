@@ -90,3 +90,28 @@ analisis_ruta_completa(Guia, Origen, Destino, Diagnostico, FechaActual) :-
         estado_envio(Guia, entregado) -> Diagnostico = entregado_ok ;
         Diagnostico = en_transito_optimo
     ).
+
+% =================================================================
+% FUNCIONES AVANZADAS DE AUDITORÍA LOGÍSTICA - ATHENEA
+% =================================================================
+
+% 1. Alerta de Fletes Excesivos (Tarifas sospechosas)
+% Alerta si el costo del flete supera un umbral maximo aceptable para la ruta.
+flete_excesivo(Guia, Costo) :-
+    costo_flete(Guia, Costo),
+    Costo > 150000. % Umbral base personalizable corporativo
+
+% 2. Evaluación de Eficiencia Operativa (Días Límite Restantes)
+% Calcula cuántos días calendario otorgó la operación para entregar el despacho.
+dias_entrega_permitidos(Guia, Dias) :-
+    fecha_despacho(Guia, fecha(DiaD, MesD, AnoD)),
+    limite_entrega(Guia, fecha(DiaL, MesL, AnoL)),
+    AnoD == AnoL, MesD == MesL, % Simplificado para el mismo mes
+    Dias is DiaL - DiaD.
+
+% 3. Identificación de Rutas Críticas por Estado
+% Clasifica envíos prioritarios estancados en revisión documental o procesos iniciales
+ruta_critica_prioritaria(Guia, Origen, Destino) :-
+    estado_envio(Guia, en_revision_doc),
+    origen_envio(Guia, Origen),
+    destino_envio(Guia, Destino).

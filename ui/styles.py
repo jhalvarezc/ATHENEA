@@ -1,5 +1,15 @@
-# modules/ui_styles.py
+# ui/styles.py - Estilos e información geográfica para la interfaz de ATHENEA
 import streamlit as st
+
+COORDENADAS_CIUDADES = {
+    'BOGOTA': {'lat': 4.7110, 'lon': -74.0721},
+    'MEDELLIN': {'lat': 6.2442, 'lon': -75.5812},
+    'CALI': {'lat': 3.4516, 'lon': -76.5320},
+    'BARRANQUILLA': {'lat': 10.9685, 'lon': -74.7813},
+    'BUCARAMANGA': {'lat': 7.1254, 'lon': -73.1198},
+    'CARTAGENA': {'lat': 10.3910, 'lon': -75.4794},
+    'PEREIRA': {'lat': 4.8133, 'lon': -75.6961}
+}
 
 def aplicar_estilos_dark():
     """Inyecta el CSS avanzado para la interfaz empresarial."""

@@ -7,7 +7,7 @@ def cargar_datos_y_auditar():
     prolog = Prolog()
     try:
         # 1. Consultar el cerebro (que ahora está vacío de datos, solo tiene reglas)
-        prolog.consult("logic.pl")
+        prolog.consult("core/logic.pl")
         print("=======================================")
         print("🧠 [ATHENEA] Arquitectura Desacoplada")
         print("=======================================\n")
@@ -15,23 +15,23 @@ def cargar_datos_y_auditar():
         # 2. Leer el archivo CSV e inyectar los datos en Prolog
         print("[*] Ingestando datos desde archivo CSV...")
         
-        with open("envios.csv", mode='r', encoding='utf-8') as file:
+        with open("storage/data/envios.csv", mode='r', encoding='utf-8') as file:
             reader = csv.DictReader(file)
             for row in reader:
-                guia = row['guia']
-                estado = row['estado']
-                limite = int(row['limite_entrega'])
-                costo = int(row['costo_flete'])
+                g = row['guia'].strip()
+                e = row['estado'].strip()
+                c = int(row['costo_flete'])
+                l_dia, l_mes, l_ano = int(row['limite_dia']), int(row['limite_mes']), int(row['limite_ano'])
                 
                 # Inyección dinámica de conocimientos a Prolog
-                prolog.assertz(f"estado_envio({guia}, {estado})")
-                prolog.assertz(f"limite_entrega({guia}, {limite})")
-                prolog.assertz(f"costo_flete({guia}, {costo})")
+                prolog.assertz(f"estado_envio('{g}', {e})")
+                prolog.assertz(f"limite_entrega('{g}', fecha({l_dia}, {l_mes}, {l_ano}))")
+                prolog.assertz(f"costo_flete('{g}', {c})")
 
         print("[✅] Datos de operación ingestados en el motor lógico.\n")
         
         # 3. Ejecutar Razonamiento Múltiple
-        fecha_hoy = 20260607
+        fecha_hoy = "fecha(7, 6, 2026)"
         
         # Auditoría 1: Los Retrasos
         print("[*] Analizando tiempos de entrega...")
@@ -52,7 +52,7 @@ def cargar_datos_y_auditar():
                 print(f" 💥 [RIESGO CRÍTICO] Envío {guia} en estado de NOVEDAD con flete de alto impacto.")
 
     except FileNotFoundError:
-        print("[ERROR] No se encontró el archivo 'envios.csv'.")
+        print("[ERROR] No se encontró el archivo 'storage/data/envios.csv'.")
     except Exception as e:
         print(f"[ERROR CRÍTICO] {e}")
         sys.exit(1)
