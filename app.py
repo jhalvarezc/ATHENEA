@@ -8,6 +8,7 @@ from ui.styles import aplicar_estilos_dark, renderizar_encabezado, COORDENADAS_C
 from drivers.osrm_driver import obtener_ruta_calle
 from drivers.prolog_driver import consultar_regla
 from storage.csv_manager import sincronizar_datos
+from ui.auth import requerir_autenticacion
 
 # 1. Configuración de Ventana e Inyección de Estilos HTML/CSS
 st.set_page_config(
@@ -19,10 +20,18 @@ st.set_page_config(
 aplicar_estilos_dark()
 renderizar_encabezado()
 
-# Ya importado arriba desde ui.styles
+# ==========================================
+# 🔒 SISTEMA DE LOGIN BLOQUEANTE
+# ==========================================
+rol_usuario = requerir_autenticacion()
 
-# Sugerencia: Mover COORDENADAS_CIUDADES a un archivo config/geo_config.py
-# Ya importado arriba desde ui.styles
+# Botón de cierre de sesión en la barra lateral
+st.sidebar.markdown(f"**Rol actual:** `{st.session_state.get('rol')}`")
+if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True):
+    st.session_state["usuario_autenticado"] = False
+    st.session_state["rol"] = None
+    st.rerun()
+st.sidebar.markdown("---")
 
 try:
     # 2. Sincronización Unificada de Datos (Ya viene enriquecida con la IA de Prolog de data_manager)
@@ -64,8 +73,11 @@ try:
     ciudades_disponibles = datos_unificados['destino'].unique().tolist() if 'destino' in datos_unificados.columns else []
     ciudades_sel = st.sidebar.multiselect("Filtrar por Destino:", ciudades_disponibles, default=ciudades_disponibles)
     
-    max_flete = int(datos_unificados['costo_flete'].max()) if 'costo_flete' in datos_unificados.columns else 100000
-    flete_minimo = st.sidebar.slider("Filtrar fletes mayores a ($):", 0, max_flete, 0)
+    if rol_usuario != 'basico':
+        max_flete = int(datos_unificados['costo_flete'].max()) if 'costo_flete' in datos_unificados.columns else 100000
+        flete_minimo = st.sidebar.slider("Filtrar fletes mayores a ($):", 0, max_flete, 0)
+    else:
+        flete_minimo = 0
 
     datos_filtrados = datos_unificados[
         (datos_unificados['fuente'].isin(fuentes_sel)) &
@@ -104,7 +116,8 @@ try:
             guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
             fila_guia = datos_filtrados[datos_filtrados['guia'] == guia_seleccionada].iloc[0]
             
-            st.info(f"📍 **Detalle Actual:** {fila_guia['guia']} | **Origen:** {str(fila_guia['origen']).upper()} | **Destino:** {str(fila_guia['destino']).upper()} | **Flete:** ${fila_guia['costo_flete']:,} COP | **Fuente:** {fila_guia['fuente']}")
+            flete_info = f" | **Flete:** ${fila_guia['costo_flete']:,} COP" if rol_usuario != 'basico' else ""
+            st.info(f"📍 **Detalle Actual:** {fila_guia['guia']} | **Origen:** {str(fila_guia['origen']).upper()} | **Destino:** {str(fila_guia['destino']).upper()}{flete_info} | **Fuente:** {fila_guia['fuente']}")
             
             # --- 🛡️ BLINDAJE GEOGRÁFICO CONTRA COORDENADAS NaN ---
             try:
@@ -170,7 +183,12 @@ try:
 
     # 7. Tablas de Control de Auditorías Específicas
     st.markdown("---")
-    columnas_mostrar = ['guia', 'origen', 'destino', 'estado', 'costo_flete', 'diagnostico_ia', 'fuente']
+    columnas_ocultar = []
+    if rol_usuario == 'basico':
+        columnas_ocultar = ['costo_flete', 'recomendaciones']
+        
+    columnas_mostrar = ['guia', 'origen', 'destino', 'estado', 'costo_flete', 'diagnostico_ia', 'fuente', 'recomendaciones']
+    columnas_mostrar = [c for c in columnas_mostrar if c not in columnas_ocultar]
     
     # 🛡️ Blindaje de Columnas: Filtramos solo las que existen para evitar KeyError
     columnas_validas = [col for col in columnas_mostrar if col in datos_filtrados.columns]

@@ -69,6 +69,7 @@ def limpiar_pendientes():
             pass
 from dashboard.metrics_ui import renderizar_metricas
 from dashboard.map_ui import renderizar_mapa
+from ui.auth import requerir_autenticacion
 
 # Estilos visuales dark de la UI
 def aplicar_estilos_dark():
@@ -91,39 +92,12 @@ st.set_page_config(
 aplicar_estilos_dark()
 
 # --- SISTEMA DE LOGIN Y RBAC ---
-if "logged_in" not in st.session_state:
-    st.session_state["logged_in"] = False
-if "rol" not in st.session_state:
-    st.session_state["rol"] = None
-
-if not st.session_state["logged_in"]:
-    st.markdown("### 🔐 Iniciar Sesión - ATHENEA")
-    with st.form("login_form"):
-        username = st.text_input("Usuario")
-        password = st.text_input("Contraseña", type="password")
-        submit = st.form_submit_button("Ingresar", use_container_width=True)
-        
-        if submit:
-            if username == "admin" and password == "admin123":
-                st.session_state["logged_in"] = True
-                st.session_state["rol"] = "admin"
-                st.success("¡Bienvenido, Administrador!")
-                time.sleep(1)
-                st.rerun()
-            elif username == "operador" and password == "operador123":
-                st.session_state["logged_in"] = True
-                st.session_state["rol"] = "basico"
-                st.success("¡Bienvenido, Operador!")
-                time.sleep(1)
-                st.rerun()
-            else:
-                st.error("Credenciales incorrectas")
-    st.stop()
+rol_usuario = requerir_autenticacion()
 
 # Botón de cierre de sesión en la barra lateral
-st.sidebar.markdown(f"**Rol actual:** `{st.session_state['rol']}`")
+st.sidebar.markdown(f"**Rol actual:** `{st.session_state.get('rol')}`")
 if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True):
-    st.session_state["logged_in"] = False
+    st.session_state["usuario_autenticado"] = False
     st.session_state["rol"] = None
     st.rerun()
 st.sidebar.markdown("---")
@@ -191,7 +165,7 @@ if opcion == "Cargar Datos (Excel)":
         
         # Filtrado de columnas según el rol de seguridad (RBAC)
         columnas_ocultar = []
-        if st.session_state.get('rol') == 'basico':
+        if rol_usuario == 'basico':
             columnas_ocultar = ['costo_flete', 'recomendaciones']
             
         cols_visual = [
