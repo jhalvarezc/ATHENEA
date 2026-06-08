@@ -1,0 +1,8 @@
+streamlit>=1.30.0
+pandas>=2.0.0
+pyswip>=0.2.10
+PyPDF2>=3.0.0
+openpyxl>=3.1.0
+requests>=2.31.0
+pydeck>=0.8.0
+fpdf>=1.7.2

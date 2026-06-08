@@ -8,7 +8,6 @@ from ui.styles import aplicar_estilos_dark, renderizar_encabezado, COORDENADAS_C
 from drivers.osrm_driver import obtener_ruta_calle
 from drivers.prolog_driver import consultar_regla
 from storage.csv_manager import sincronizar_datos
-from ui.revision_ui import renderizar_bandeja_revision # 🔀 CAMBIO 1: Importación de la UI interactiva
 
 # 1. Configuración de Ventana e Inyección de Estilos HTML/CSS
 st.set_page_config(
@@ -20,9 +19,7 @@ st.set_page_config(
 aplicar_estilos_dark()
 renderizar_encabezado()
 
-# 🔀 CAMBIO 2: Inyectar la bandeja aquí. Si el usuario confirma o edita datos, 
-# guardará en envios.csv y llamará a st.rerun(), actualizando todo lo que sigue abajo.
-renderizar_bandeja_revision()
+# Ya importado arriba desde ui.styles
 
 # Sugerencia: Mover COORDENADAS_CIUDADES a un archivo config/geo_config.py
 # Ya importado arriba desde ui.styles
@@ -84,16 +81,15 @@ try:
     st.sidebar.success("🟢 ATHENEA Inference Engine: Activo")
 
     # 5. Panel de Control de Indicadores (KPIs Dinámicos con Nuevas Funciones)
-    kpi1, kpi2, kpi3, kpi4 = st.columns(4)
+    kpi1, kpi2, kpi3 = st.columns(3)
     kpi1.metric("📦 Total Líneas Auditadas", f"{len(datos_filtrados):,}")
-    kpi2.metric("📄 Guías desde PDFs (OCR)", len(datos_filtrados[datos_filtrados['fuente'] == 'PDF_Digitalizado']))
     
     # KPIs alimentados directamente por el Paso 3 de Prolog:
     urgentes = len(datos_filtrados[datos_filtrados['prioridad_alta'] == True]) if 'prioridad_alta' in datos_filtrados.columns else 0
-    kpi3.metric("⚡ SLA Crítico (Urgentes)", urgentes)
+    kpi2.metric("⚡ SLA Crítico (Urgentes)", urgentes)
     
     sobrecostos = len(datos_filtrados[datos_filtrados['alerta_costo'] == True]) if 'alerta_costo' in datos_filtrados.columns else 0
-    kpi4.metric("💰 Fletes con Sobreprecio", sobrecostos)
+    kpi3.metric("💰 Fletes con Sobreprecio", sobrecostos)
 
     st.markdown("---")
 
@@ -136,7 +132,7 @@ try:
             coordenadas_carretera = obtener_ruta_calle(orig_lon, orig_lat, dest_lon, dest_lat)
             
             if coordenadas_carretera and len(coordenadas_carretera) > 0:
-                color_linea = [242, 140, 15, 255] if fila_guia['fuente'] == 'PDF_Digitalizado' else [88, 166, 255, 255]
+                color_linea = [88, 166, 255, 255]
                 df_ruta_mapa = pd.DataFrame([{'path': coordenadas_carretera, 'color': color_linea}])
                 
                 capa_camino_carreteras = pdk.Layer(
