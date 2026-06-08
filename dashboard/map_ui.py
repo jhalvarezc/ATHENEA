@@ -59,10 +59,10 @@ def renderizar_mapa(df_filtrado):
         
         if coordenadas_carretera:
             # Color de la línea según estado de auditoría
-            estado_aud = str(fila_guia.get('estado_auditoria', 'aprobado')).lower()
-            if estado_aud == 'riesgo_financiero':
+            estado_aud = str(fila_guia.get('estado_auditoria', 'riesgo_bajo')).lower()
+            if estado_aud == 'riesgo_alto':
                 color_linea = [239, 68, 68, 255] # Rojo
-            elif estado_aud == 'alerta_retraso':
+            elif estado_aud == 'riesgo_medio':
                 color_linea = [242, 140, 15, 255] # Naranja
             else:
                 color_linea = [88, 166, 255, 255] # Azul

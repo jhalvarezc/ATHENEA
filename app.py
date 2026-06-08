@@ -180,7 +180,7 @@ try:
         st.markdown("<h3 style='font-size:1.1rem; color:#ef4444;'>🚨 Auditoría de Riesgos y Alertas Críticas</h3>", unsafe_allow_html=True)
         df_alertas = datos_filtrados[datos_filtrados['diagnostico_ia'] == 'critico_financiero']
         if not df_alertas.empty:
-            st.dataframe(df_alertas[columnas_validas], use_container_width=True)
+            st.dataframe(df_alertas[columnas_validas], width="stretch")
         else:
             st.info("No se detectaron alertas críticas con los filtros actuales.")
         
@@ -189,7 +189,7 @@ try:
         if 'alerta_costo' in datos_filtrados.columns:
             df_caros = datos_filtrados[datos_filtrados['alerta_costo'] == True]
             if not df_caros.empty:
-                st.dataframe(df_caros[columnas_validas], use_container_width=True)
+                st.dataframe(df_caros[columnas_validas], width="stretch")
             else:
                 st.info("No hay fletes con sobreprecio detectados.")
         else:
@@ -198,7 +198,7 @@ try:
     # 8. Repositorio de Trazabilidad Total Completo
     st.markdown("---")
     st.markdown("<h2 style='font-size:1.4rem;'>📋 Repositorio Central de Trazabilidad Logística</h2>", unsafe_allow_html=True)
-    st.dataframe(datos_filtrados[columnas_validas], use_container_width=True)
+    st.dataframe(datos_filtrados[columnas_validas], width="stretch")
 
 except Exception as e:
     st.error(f"Error general en la orquestación modular: {e}")

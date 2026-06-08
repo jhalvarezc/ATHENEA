@@ -90,6 +90,44 @@ st.set_page_config(
 )
 aplicar_estilos_dark()
 
+# --- SISTEMA DE LOGIN Y RBAC ---
+if "logged_in" not in st.session_state:
+    st.session_state["logged_in"] = False
+if "rol" not in st.session_state:
+    st.session_state["rol"] = None
+
+if not st.session_state["logged_in"]:
+    st.markdown("### 🔐 Iniciar Sesión - ATHENEA")
+    with st.form("login_form"):
+        username = st.text_input("Usuario")
+        password = st.text_input("Contraseña", type="password")
+        submit = st.form_submit_button("Ingresar", use_container_width=True)
+        
+        if submit:
+            if username == "admin" and password == "admin123":
+                st.session_state["logged_in"] = True
+                st.session_state["rol"] = "admin"
+                st.success("¡Bienvenido, Administrador!")
+                time.sleep(1)
+                st.rerun()
+            elif username == "operador" and password == "operador123":
+                st.session_state["logged_in"] = True
+                st.session_state["rol"] = "basico"
+                st.success("¡Bienvenido, Operador!")
+                time.sleep(1)
+                st.rerun()
+            else:
+                st.error("Credenciales incorrectas")
+    st.stop()
+
+# Botón de cierre de sesión en la barra lateral
+st.sidebar.markdown(f"**Rol actual:** `{st.session_state['rol']}`")
+if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True):
+    st.session_state["logged_in"] = False
+    st.session_state["rol"] = None
+    st.rerun()
+st.sidebar.markdown("---")
+
 st.markdown("<h1 class='titulo-athenea'>🧠 ATHENEA - Centro de Inteligencia Logística</h1>", unsafe_allow_html=True)
 st.markdown("<p style='color: #8b949e; margin-top:-10px;'>Plataforma modular de auditoría con motores Prolog y visualización geográfica.</p>", unsafe_allow_html=True)
 st.markdown("---")
@@ -151,10 +189,18 @@ if opcion == "Cargar Datos (Excel)":
         df_visual['fecha_despacho_legible'] = df_visual.apply(lambda r: formatear_fecha(r, 'despacho'), axis=1)
         df_visual['fecha_limite_legible'] = df_visual.apply(lambda r: formatear_fecha(r, 'limite'), axis=1)
         
+        # Filtrado de columnas según el rol de seguridad (RBAC)
+        columnas_ocultar = []
+        if st.session_state.get('rol') == 'basico':
+            columnas_ocultar = ['costo_flete', 'recomendaciones']
+            
         cols_visual = [
-            'guia_id', 'origen', 'destino', 'estado_auditoria', 'costo_flete',
+            'guia_id', 'origen', 'destino', 'estado_auditoria', 'alertas_detalladas', 'salud', 'categoria', 'recomendaciones', 'costo_flete',
             'fecha_despacho_legible', 'fecha_limite_legible'
         ]
+        
+        # Filtrar columnas
+        cols_visual = [c for c in cols_visual if c not in columnas_ocultar]
         cols_mostrar = [c for c in cols_visual if c in df_visual.columns]
         
         # Tabla interactiva

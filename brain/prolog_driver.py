@@ -53,19 +53,66 @@ def auditar_envio(datos):
             prolog_instance.assertz(f"fecha_despacho('{g}', fecha({d_dia}, {d_mes}, {d_ano}))")
             prolog_instance.assertz(f"limite_entrega('{g}', fecha({l_dia}, {l_mes}, {l_ano}))")
 
-            # 1. Riesgo Financiero
-            r_critico = consultar_regla(f"alerta_critica('{g}')")
-            r_perdida = consultar_regla(f"alerta_riesgo_perdida_total('{g}')")
-            r_fraude = consultar_regla(f"flete_sospechoso('{g}')")
-            if r_critico or r_perdida or r_fraude:
-                return "riesgo_financiero"
+            import datetime
+            hoy = datetime.date.today()
             
-            # 2. Retraso (Fecha Simulación: 7 de Junio de 2026)
-            retraso = consultar_regla(f"alerta_retraso('{g}', fecha(7, 6, 2026))")
-            if retraso:
-                return "alerta_retraso"
-
-            return "aprobado"
+            res = consultar_regla(f"auditoria_integral('{g}', fecha({hoy.day}, {hoy.month}, {hoy.year}), ListaAlertas, SaludFinal, Categoria, ListaRecomendaciones)")
+            
+            alertas_str = ""
+            salud = 100
+            categoria = "excelente"
+            recom_str = ""
+            
+            if res:
+                solucion = res[0]
+                
+                # Alertas
+                lista_alertas = solucion.get('ListaAlertas', [])
+                alertas_deco = []
+                for a in lista_alertas:
+                    if isinstance(a, bytes):
+                        alertas_deco.append(a.decode('utf-8'))
+                    else:
+                        alertas_deco.append(str(a))
+                alertas_str = ", ".join(alertas_deco)
+                
+                # Salud Final
+                salud_val = solucion.get('SaludFinal', 100)
+                try:
+                    salud = int(salud_val)
+                except Exception:
+                    salud = 100
+                
+                # Categoria
+                cat = solucion.get('Categoria', 'excelente')
+                if isinstance(cat, bytes):
+                    categoria = cat.decode('utf-8')
+                else:
+                    categoria = str(cat)
+                    
+                # Recomendaciones
+                lista_recom = solucion.get('ListaRecomendaciones', [])
+                recom_deco = []
+                for r in lista_recom:
+                    if isinstance(r, bytes):
+                        recom_deco.append(r.decode('utf-8'))
+                    else:
+                        recom_deco.append(str(r))
+                recom_str = ", ".join(recom_deco)
+            else:
+                alertas_str = "✅ Operación Normal"
+                salud = 100
+                categoria = "excelente"
+                recom_str = "Continuar monitoreo estándar."
+                
+            datos['salud'] = salud
+            datos['recomendaciones'] = recom_str
+            datos['alertas'] = alertas_str
+            datos['alertas_detalladas'] = alertas_str
+            datos['categoria'] = categoria
+            datos['estado_auditoria'] = categoria
+            
+            return categoria
             
         finally:
             # Retractar para limpiar
