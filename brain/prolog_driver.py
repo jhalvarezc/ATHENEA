@@ -122,3 +122,13 @@ def auditar_envio(datos):
             consultar_regla(f"retractall(destino_envio('{g}', _))")
             consultar_regla(f"retractall(fecha_despacho('{g}', _))")
             consultar_regla(f"retractall(limite_entrega('{g}', _))")
+
+def obtener_alertas_financieras():
+    """Consulta guías con fletes por encima del estándar."""
+    res = consultar_regla("flete_alto(Guia, Costo)")
+    return [r['Guia'].decode('utf-8') if isinstance(r['Guia'], bytes) else str(r['Guia']) for r in res]
+
+def obtener_entregas_criticas():
+    """Consulta guías que tienen un margen de entrega muy corto."""
+    res = consultar_regla("entrega_urgente(Guia)")
+    return [r['Guia'].decode('utf-8') if isinstance(r['Guia'], bytes) else str(r['Guia']) for r in res]

@@ -115,3 +115,14 @@ ruta_critica_prioritaria(Guia, Origen, Destino) :-
     estado_envio(Guia, en_revision_doc),
     origen_envio(Guia, Origen),
     destino_envio(Guia, Destino).
+
+% =================================================================
+% 4. COMPATIBILIDAD CON REPORTES Y KPIS DE CONTROL
+% =================================================================
+flete_alto(Guia, Costo) :-
+    costo_flete(Guia, Costo),
+    Costo > 2500.
+
+entrega_urgente(Guia) :-
+    estado_envio(Guia, Estado),
+    (Estado = en_novedad ; Estado = en_revision_doc).

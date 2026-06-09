@@ -38,7 +38,7 @@ def renderizar_mapa(df_filtrado):
         st.warning("No hay datos geográficos disponibles.")
         return
 
-    list_guias = sorted(df_filtrado['guia_id'].unique().tolist())
+    list_guias = sorted([str(g) for g in df_filtrado['guia_id'].unique().tolist()])
     
     if list_guias:
         guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)

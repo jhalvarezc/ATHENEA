@@ -111,4 +111,29 @@ columnas_permitidas(Rol, [Columna|Resto], [Columna|Permitidas]) :-
     puede_ver(Rol, Columna),
     columnas_permitidas(Rol, Resto, Permitidas).
 columnas_permitidas(Rol, [_|Resto], Permitidas) :-
-    columnas_permitidas(Rol, Resto, Permitidas).    
+    columnas_permitidas(Rol, Resto, Permitidas).
+
+% =================================================================
+% 6. COMPATIBILIDAD CON REPORTES Y KPIS DE CONTROL
+% =================================================================
+flete_alto(Guia, Costo) :-
+    costo_flete(Guia, Costo),
+    Costo > 2500.
+
+entrega_urgente(Guia) :-
+    estado_envio(Guia, Estado),
+    (Estado = en_novedad ; Estado = en_revision_doc).    
+
+% ---------------------------------------------------------
+% 7. PUENTE DE COMPATIBILIDAD (Para el Dashboard del Admin)
+% ---------------------------------------------------------
+analisis_ruta_completa(Guia, Origen, Destino, Diagnostico, FechaActual) :-
+    origen_envio(Guia, Origen),
+    destino_envio(Guia, Destino),
+    (
+        retraso_por_despacho(Guia, FechaActual) -> Diagnostico = retraso_critico ;
+        retraso_por_transporte(Guia, FechaActual) -> Diagnostico = retraso_ruta ;
+        alerta_critica(Guia) -> Diagnostico = critico_financiero ;
+        estado_envio(Guia, entregado) -> Diagnostico = entregado_ok ;
+        Diagnostico = en_transito_optimo
+    ).    

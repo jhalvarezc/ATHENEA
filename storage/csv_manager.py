@@ -1,7 +1,7 @@
 # storage/csv_manager.py - Gestor de persistencia CSV para ATHENEA
 import pandas as pd
 import os
-from drivers.prolog_driver import consultar_regla, prolog_instance, obtener_alertas_financieras, obtener_entregas_criticas
+from brain.prolog_driver import consultar_regla, prolog_instance, obtener_alertas_financieras, obtener_entregas_criticas
 
 def enriquecer_con_ia(df):
     """
@@ -65,3 +65,36 @@ def sincronizar_datos():
     # 4. Enriquecer la data con las reglas antes de retornarla a app.py
     df_listo = enriquecer_con_ia(df_unificado)
     return df_listo
+
+def obtener_datos_consolidados():
+    """
+    Sincroniza el histórico oficial, lee la cola de pendientes de aprobación si existe,
+    y fusiona ambos en un solo DataFrame consolidado.
+    """
+    # 1. Obtener histórico enriquecido con IA
+    df_historico = sincronizar_datos()
+    
+    # 2. Leer pendientes de aprobación
+    ruta_pendientes = os.path.join("storage", "data", "pendientes_aprobacion.csv")
+    df_pendientes = pd.DataFrame()
+    if os.path.exists(ruta_pendientes):
+        try:
+            df_pendientes = pd.read_csv(ruta_pendientes)
+            if not df_pendientes.empty:
+                df_pendientes['fuente'] = 'Cargue_Operador_Excel'
+        except Exception:
+            pass
+            
+    # 3. Fusionar datos
+    dfs_to_concat = []
+    if df_historico is not None and not df_historico.empty:
+        dfs_to_concat.append(df_historico)
+    if not df_pendientes.empty:
+        dfs_to_concat.append(df_pendientes)
+        
+    if dfs_to_concat:
+        df_consolidado = pd.concat(dfs_to_concat, ignore_index=True)
+    else:
+        df_consolidado = pd.DataFrame()
+        
+    return df_consolidado
