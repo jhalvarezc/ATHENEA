@@ -30,12 +30,19 @@ def renderizar_mapa(df_filtrado):
         st.warning("No hay datos geográficos disponibles.")
         return
 
-    list_guias = sorted([str(g) for g in df_filtrado['guia_id'].unique().tolist()])
+    df_clean = df_filtrado.copy()
+    if 'guia_id' not in df_clean.columns:
+        if 'guia' in df_clean.columns:
+            df_clean['guia_id'] = df_clean['guia']
+        else:
+            df_clean['guia_id'] = 'Desconocida'
+
+    list_guias = sorted([str(g) for g in df_clean['guia_id'].unique().tolist()])
     
     with st.container(border=True):
         if list_guias:
             guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
-            fila_guia = df_filtrado[df_filtrado['guia_id'] == guia_seleccionada].iloc[0]
+            fila_guia = df_clean[df_clean['guia_id'] == guia_seleccionada].iloc[0]
             
             ciudad_orig = str(fila_guia['origen']).split('/')[0].strip()
             ciudad_dest = str(fila_guia['destino']).split('/')[0].strip()

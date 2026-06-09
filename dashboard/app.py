@@ -357,7 +357,11 @@ elif rol_usuario == "admin":
                 estados_auditoria.append(auditar_envio(dict_row))
                 
             df_historico_audit['estado_auditoria'] = estados_auditoria
-            renderizar_mapa(df_historico_audit)
+            
+            # Inyectar filtros de mapa horizontales
+            from ui.filters import renderizar_barra_filtros
+            df_filtrado_mapa = renderizar_barra_filtros(df_historico_audit, key_prefix="exec_mapa", mostrar_flete=True)
+            renderizar_mapa(df_filtrado_mapa)
             
     elif opcion == "🚨 Guías Urgentes":
         st.components.v1.html("""

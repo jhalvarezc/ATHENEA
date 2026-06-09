@@ -2,62 +2,22 @@
 import streamlit as st
 import pandas as pd
 
-def renderizar_metricas(df_filtrado):
+def renderizar_metricas(df_filtrado_raw):
     """
-    Renderiza los KPIs dinámicos y los gráficos de la operación en el Dashboard.
+    Renderiza los filtros horizontales, KPIs dinámicos y los gráficos de la operación en el Dashboard.
     """
-    if df_filtrado is None or df_filtrado.empty:
+    if df_filtrado_raw is None or df_filtrado_raw.empty:
         st.warning("⚠️ No hay datos para mostrar métricas.")
         return
 
-    # 1. Indicadores principales (KPIs)
-    kpi1, kpi2, kpi3 = st.columns(3)
-    
-    total_audits = len(df_filtrado)
-    kpi1.metric("📦 Total Líneas Auditadas", f"{total_audits:,}")
-    
-    # Alertas basadas en auditoría
-    if 'alertas_detalladas' in df_filtrado.columns:
-        urgentes = len(df_filtrado[df_filtrado['alertas_detalladas'].astype(str).str.contains('Retraso|Vehículo', case=False, na=False)])
-        sobrecostos = len(df_filtrado[df_filtrado['alertas_detalladas'].astype(str).str.contains('Riesgo|Tarifa|Fraude', case=False, na=False)])
-    else:
-        # Fallback si no está la columna usando los niveles de riesgo
-        urgentes = len(df_filtrado[df_filtrado['estado_auditoria'] == 'riesgo_medio'])
-        sobrecostos = len(df_filtrado[df_filtrado['estado_auditoria'] == 'riesgo_alto'])
-        
-    kpi2.metric("⚡ SLA Crítico (Retrasos)", urgentes)
-    kpi3.metric("💰 Fletes con Sobreprecio", sobrecostos)
+    # Inyectar la barra de filtros horizontal
+    from ui.filters import renderizar_barra_filtros
+    df_filtrado = renderizar_barra_filtros(df_filtrado_raw, key_prefix="exec_metrics", mostrar_flete=True)
 
-    st.markdown("---")
-    
-    # 2. Gráficos (Cuadrícula Premium 2x2)
-    col_graf1, col_graf2 = st.columns(2)
-    with col_graf1:
-        with st.container(border=True):
-            try:
-                from ui.charts import renderizar_grafico_canal
-                renderizar_grafico_canal(df_filtrado)
-            except Exception as e:
-                st.error(f"Error cargando gráfica de procedencia: {e}")
-        
-        with st.container(border=True):
-            try:
-                from ui.charts import renderizar_grafico_costos
-                renderizar_grafico_costos(df_filtrado)
-            except Exception as e:
-                st.error(f"Error cargando gráfica de costos: {e}")
+    if df_filtrado is None or df_filtrado.empty:
+        st.warning("⚠️ No hay registros de envíos que coincidan con los filtros aplicados.")
+        return
 
-    with col_graf2:
-        with st.container(border=True):
-            try:
-                from ui.charts import renderizar_grafico_estados
-                renderizar_grafico_estados(df_filtrado)
-            except Exception as e:
-                st.error(f"Error cargando gráfica de estados: {e}")
-        
-        with st.container(border=True):
-            try:
-                from ui.charts import renderizar_grafico_ia
-                renderizar_grafico_ia(df_filtrado)
-            except Exception as e:
-                st.error(f"Error cargando gráfica de auditoría IA: {e}")
+    # Renderizar el tablero analítico unificado (KPIs a la izquierda, gráficos a la derecha)
+    from ui.charts import renderizar_tablero_analitico
+    renderizar_tablero_analitico(df_filtrado, 'admin')

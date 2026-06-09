@@ -5,8 +5,8 @@ import pandas as pd
 # Diccionarios globales de traducción amigable para visualizaciones
 DICCIONARIO_FUENTES = {
     'Data_Lake_CSV': '📁 Histórico (CSV)',
-    'Cargue_Operador_Excel': '📥 Ingesta (Excel)',
-    'Excel_Importado': '📥 Ingesta (Excel)'
+    'Cargue_Operador_Excel': '📥 Cargues (Excel)',
+    'Excel_Importado': '📥 Cargues (Excel)'
 }
 
 DICCIONARIO_ESTADOS = {
@@ -35,7 +35,7 @@ def aplicar_estilos_plotly(fig):
             size=11,
             color='#cbd5e1'
         ),
-        margin=dict(l=20, r=20, t=40, b=20),
+        margin=dict(l=10, r=10, t=40, b=10),
         legend=dict(
             orientation="h",
             yanchor="bottom",
@@ -50,7 +50,6 @@ def aplicar_estilos_plotly(fig):
             font=dict(color="#ffffff", size=12)
         )
     )
-    # Configuración de ejes sutiles
     fig.update_xaxes(
         gridcolor='rgba(255, 255, 255, 0.04)',
         zerolinecolor='rgba(255, 255, 255, 0.08)',
@@ -70,7 +69,6 @@ def categorizar_riesgo(row):
     is_critico = False
     is_atencion = False
     
-    # Evaluar prioridad / criticidad alta
     if row.get('prioridad_alta') == True:
         is_critico = True
     if str(row.get('diagnostico_ia', '')).strip().lower() in ['critico_financiero', 'riesgo_alto']:
@@ -82,7 +80,6 @@ def categorizar_riesgo(row):
         if any(w in alertas for w in ['Riesgo', 'Tarifa', 'Fraude']):
             is_critico = True
             
-    # Evaluar sobrecosto / alertas financieras (Riesgo medio)
     if row.get('alerta_costo') == True:
         is_atencion = True
     if str(row.get('estado_auditoria', '')).strip().lower() == 'riesgo_medio':
@@ -99,165 +96,414 @@ def categorizar_riesgo(row):
     else:
         return '✅ Operación Normal'
 
+# --- GRÁFICOS COMPATIBLES ANTERIORES (Por retrocompatibilidad) ---
 def renderizar_grafico_canal(df):
-    """1. Volumen de Carga por Canal de Captura (Donut Chart)"""
-    st.markdown("<p style='color: #8b949e; font-weight:bold; font-size:1.05rem; margin-bottom:0;'>Volumen por Origen de Datos</p>", unsafe_allow_html=True)
-    
     if df is None or df.empty:
-        st.caption("Sin datos suficientes.")
+        st.caption("Sin datos.")
         return
-        
-    fuente_col = 'fuente' if 'fuente' in df.columns else ('fuente_datos' if 'fuente_datos' in df.columns else None)
-    if not fuente_col:
-        st.caption("Campo de procedencia ausente.")
-        return
-
-    counts = df[fuente_col].value_counts().reset_index()
-    counts.columns = ['Origen', 'Cantidad']
-    counts['Origen'] = counts['Origen'].map(lambda x: DICCIONARIO_FUENTES.get(x, str(x)))
-    
-    if PLOTLY_DISPONIBLE:
-        fig = px.pie(
-            counts,
-            names='Origen',
-            values='Cantidad',
-            hole=0.45,
-            color_discrete_sequence=['#3b82f6', '#06b6d4', '#6366f1']
-        )
-        fig.update_traces(textinfo='percent', textposition='inside')
-        aplicar_estilos_plotly(fig)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    else:
-        # Fallback resiliente
-        chart_data = counts.set_index('Origen')['Cantidad']
-        st.bar_chart(chart_data, color="#3b82f6")
+    fig = plot_donut_costo(df)
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 def renderizar_grafico_estados(df):
-    """2. Distribución de Envíos por Estado Lógico (Vertical Bar Chart)"""
-    st.markdown("<p style='color: #8b949e; font-weight:bold; font-size:1.05rem; margin-bottom:0;'>Distribución de Estados Operativos</p>", unsafe_allow_html=True)
-    
     if df is None or df.empty:
-        st.caption("Sin datos suficientes.")
+        st.caption("Sin datos.")
         return
-
-    if 'estado' not in df.columns:
-        st.caption("Campo de estado ausente.")
-        return
-
-    counts = df['estado'].value_counts().reset_index()
-    counts.columns = ['Estado_Raw', 'Cantidad']
-    counts['Estado'] = counts['Estado_Raw'].map(lambda x: DICCIONARIO_ESTADOS.get(x, str(x).replace('_', ' ').title()))
-    
-    # Mapa de colores empresariales específicos por estado
-    color_discrete_map = {
-        '📦 En Bodega': '#64748b',       # Gris/Slate
-        '🚛 En Tránsito': '#3b82f6',     # Azul
-        '⚠️ En Novedad': '#ef4444',      # Rojo
-        '✅ Entregado': '#10b981',       # Verde Esmeralda
-        '📝 En Preparación': '#8b5cf6',   # Púrpura
-        '🔍 En Revisión Doc': '#f59e0b'   # Ámbar
-    }
-
-    if PLOTLY_DISPONIBLE:
-        fig = px.bar(
-            counts,
-            x='Estado',
-            y='Cantidad',
-            color='Estado',
-            color_discrete_map=color_discrete_map,
-            category_orders={"Estado": list(color_discrete_map.keys())}
-        )
-        fig.update_layout(showlegend=False)
-        fig.update_traces(
-            marker_line_color='rgba(255,255,255,0.1)',
-            marker_line_width=1,
-            opacity=0.9
-        )
-        aplicar_estilos_plotly(fig)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    else:
-        chart_data = counts.set_index('Estado')['Cantidad']
-        st.bar_chart(chart_data, color="#3b82f6")
+    fig = plot_bar_cantidad_origen(df)
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 def renderizar_grafico_costos(df):
-    """3. Costo Acumulado de Flete por Ciudad de Destino (Horizontal Bar Chart)"""
-    st.markdown("<p style='color: #8b949e; font-weight:bold; font-size:1.05rem; margin-bottom:0;'>Fletes Acumulados por Destino (COP)</p>", unsafe_allow_html=True)
-    
     if df is None or df.empty:
-        st.caption("Sin datos suficientes.")
+        st.caption("Sin datos.")
         return
-
-    costo_col = 'costo_flete' if 'costo_flete' in df.columns else None
-    destino_col = 'destino' if 'destino' in df.columns else None
-    
-    if not costo_col or not destino_col:
-        st.caption("Campos de costos o destino ausentes.")
-        return
-
-    # Limpiar y agrupar top destinos por costo
-    df_clean = df.copy()
-    df_clean[costo_col] = pd.to_numeric(df_clean[costo_col], errors='coerce').fillna(0)
-    df_clean['Destino'] = df_clean[destino_col].astype(str).str.title()
-    
-    df_grouped = df_clean.groupby('Destino')[costo_col].sum().reset_index()
-    df_grouped = df_grouped.sort_values(by=costo_col, ascending=True).tail(8) # Top 8 ciudades de llegada
-    df_grouped.columns = ['Destino', 'Flete Total']
-
-    if PLOTLY_DISPONIBLE:
-        fig = px.bar(
-            df_grouped,
-            x='Flete Total',
-            y='Destino',
-            orientation='h',
-            color='Flete Total',
-            color_continuous_scale=['#065f46', '#10b981', '#34d399'] # Degradado esmeralda
-        )
-        fig.update_layout(coloraxis_showscale=False)
-        fig.update_traces(
-            texttemplate='$%{x:,.0f}', 
-            textposition='outside',
-            cliponaxis=False
-        )
-        aplicar_estilos_plotly(fig)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
-    else:
-        chart_data = df_grouped.set_index('Destino')['Flete Total']
-        st.bar_chart(chart_data, color="#10b981")
+    fig = plot_bar_costo_ruta(df)
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
 def renderizar_grafico_ia(df):
-    """4. Distribución de Auditorías e Inferencias de IA Prolog (Donut/Bar Chart)"""
-    st.markdown("<p style='color: #8b949e; font-weight:bold; font-size:1.05rem; margin-bottom:0;'>Diagnóstico de Auditoría (IA Prolog)</p>", unsafe_allow_html=True)
-    
     if df is None or df.empty:
-        st.caption("Sin datos suficientes.")
+        st.caption("Sin datos.")
         return
-
-    # Aplicar categorización de riesgos
     df_cat = df.copy()
     df_cat['Riesgo_IA'] = df_cat.apply(categorizar_riesgo, axis=1)
-    
     counts = df_cat['Riesgo_IA'].value_counts().reset_index()
     counts.columns = ['Auditoria', 'Cantidad']
-    
     color_map = {
         '🚨 Crítico / SLA': '#ef4444',
         '⚠️ Flete / Alerta': '#f59e0b',
         '✅ Operación Normal': '#10b981'
     }
+    fig = px.pie(
+        counts,
+        names='Auditoria',
+        values='Cantidad',
+        hole=0.45,
+        color='Auditoria',
+        color_discrete_map=color_map,
+        category_orders={"Auditoria": list(color_map.keys())}
+    )
+    fig.update_traces(textinfo='percent', textposition='inside')
+    aplicar_estilos_plotly(fig)
+    st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
 
-    if PLOTLY_DISPONIBLE:
-        fig = px.pie(
-            counts,
-            names='Auditoria',
-            values='Cantidad',
-            hole=0.45,
-            color='Auditoria',
-            color_discrete_map=color_map,
-            category_orders={"Auditoria": list(color_map.keys())}
-        )
-        fig.update_traces(textinfo='percent', textposition='inside')
-        aplicar_estilos_plotly(fig)
-        st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+# --- NUEVOS ELEMENTOS DEL TABLERO CONTROL CENTER ---
+
+def renderizar_kpis_verticales(df):
+    """Calcula y dibuja la barra vertical de 4 KPIs del panel izquierdo."""
+    total = len(df)
+    finalizados = len(df[df['estado'] == 'entregado'])
+    pendientes = len(df[~df['estado'].isin(['entregado', 'en_novedad'])])
+    devueltos = len(df[df['estado'] == 'en_novedad'])
+    
+    pct_fin = (finalizados / total * 100) if total > 0 else 0
+    pct_pen = (pendientes / total * 100) if total > 0 else 0
+    pct_dev = (devueltos / total * 100) if total > 0 else 0
+    
+    st.markdown(f"""
+    <div style="display: flex; flex-direction: column; gap: 15px;">
+        <div class="kpi-card-sidebar">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="kpi-title">Número de Envíos</span>
+                <span class="kpi-icon">🚛</span>
+            </div>
+            <div class="kpi-value">{total:,}</div>
+        </div>
+        <div class="kpi-card-sidebar">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="kpi-title">Envíos Finalizados</span>
+                <span class="kpi-icon">✅</span>
+            </div>
+            <div class="kpi-value">{finalizados:,}</div>
+            <div class="kpi-percentage">{pct_fin:.1f}% del total</div>
+        </div>
+        <div class="kpi-card-sidebar">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="kpi-title">Envíos Pendientes</span>
+                <span class="kpi-icon">⚠️</span>
+            </div>
+            <div class="kpi-value">{pendientes:,}</div>
+            <div class="kpi-percentage">{pct_pen:.1f}% del total</div>
+        </div>
+        <div class="kpi-card-sidebar">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span class="kpi-title">Envíos Devueltos</span>
+                <span class="kpi-icon">❌</span>
+            </div>
+            <div class="kpi-value">{devueltos:,}</div>
+            <div class="kpi-percentage">{pct_dev:.1f}% del total</div>
+        </div>
+    </div>
+    """, unsafe_allow_html=True)
+
+def plot_envios_fecha(df):
+    """Gráfico de línea suavizado de cantidad de envíos por fecha con línea de promedio."""
+    df_date = df.copy()
+    
+    # Crear campo de fecha de despacho seguro
+    for f in ['despacho_ano', 'despacho_mes', 'despacho_dia']:
+        if f not in df_date.columns:
+            df_date[f] = 1 if 'dia' in f or 'mes' in f else 2026
+            
+    df_date['fecha_dt'] = pd.to_datetime(
+        df_date['despacho_ano'].astype(str) + '-' + 
+        df_date['despacho_mes'].astype(str).str.zfill(2) + '-' + 
+        df_date['despacho_dia'].astype(str).str.zfill(2), 
+        errors='coerce'
+    )
+    df_date = df_date.dropna(subset=['fecha_dt'])
+    
+    if df_date.empty:
+        # Fallback en caso de que no haya fechas
+        df_date = pd.DataFrame([{'fecha_dt': pd.Timestamp('2026-06-01'), 'Cantidad': 1}])
+        df_grouped = df_date.groupby('fecha_dt').size().reset_index(name='Cantidad')
+        df_grouped['Periodo'] = 'Jun 2026'
     else:
-        chart_data = counts.set_index('Auditoria')['Cantidad']
-        st.bar_chart(chart_data, color="#ef4444")
+        # Agrupar por mes y año para simular histórico
+        df_date['Periodo'] = df_date['fecha_dt'].dt.strftime('%b %Y')
+        df_date['YearMonth'] = df_date['fecha_dt'].dt.to_period('M')
+        df_grouped = df_date.groupby(['YearMonth', 'Periodo']).size().reset_index(name='Cantidad')
+        df_grouped = df_grouped.sort_values('YearMonth')
+
+    # Si hay pocos periodos, agrupar por día para que se dibuje una gráfica de línea bonita
+    if len(df_grouped) <= 1 and not df_date.empty:
+        df_grouped = df_date.groupby('fecha_dt').size().reset_index(name='Cantidad')
+        df_grouped['Periodo'] = df_grouped['fecha_dt'].dt.strftime('%d %b')
+        df_grouped = df_grouped.sort_values('fecha_dt')
+
+    fig = go.Figure()
+    
+    # Añadir traza con spline suavizado y relleno
+    fig.add_trace(go.Scatter(
+        x=df_grouped['Periodo'],
+        y=df_grouped['Cantidad'],
+        mode='lines+markers',
+        line=dict(shape='spline', color='#38bdf8', width=3),
+        fill='tozeroy',
+        fillcolor='rgba(56, 189, 248, 0.08)',
+        name='Envíos'
+    ))
+    
+    # Calcular promedio
+    avg_val = df_grouped['Cantidad'].mean() if not df_grouped.empty else 0
+    fig.add_hline(
+        y=avg_val, 
+        line_dash="dash", 
+        line_color="rgba(239, 68, 68, 0.7)", 
+        annotation_text=f"Promedio: {avg_val:.1f}",
+        annotation_position="top left",
+        annotation_font=dict(color="#94a3b8", size=9)
+    )
+    
+    fig.update_layout(
+        title=dict(text="Cantidad de Envíos por Fecha", font=dict(size=13, color="#ffffff")),
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=220
+    )
+    aplicar_estilos_plotly(fig)
+    return fig
+
+def plot_donut_costo(df):
+    """Donut chart del costo total de flete distribuido por procedencia (fuente)."""
+    df_clean = df.copy()
+    if 'fuente' not in df_clean.columns:
+        df_clean['fuente'] = 'Data_Lake_CSV'
+    df_clean['fuente'] = df_clean['fuente'].fillna('Data_Lake_CSV').astype(str)
+    
+    cost_col = 'costo_flete' if 'costo_flete' in df_clean.columns else None
+    if not cost_col:
+        return go.Figure()
+        
+    df_grouped = df_clean.groupby('fuente')[cost_col].sum().reset_index()
+    df_grouped.columns = ['Origen', 'Costo']
+    df_grouped['Origen'] = df_grouped['Origen'].map(lambda x: DICCIONARIO_FUENTES.get(x, str(x)))
+    
+    fig = px.pie(
+        df_grouped,
+        names='Origen',
+        values='Costo',
+        hole=0.55,
+        color_discrete_sequence=['#38bdf8', '#6366f1', '#10b981']
+    )
+    fig.update_traces(
+        textinfo='percent',
+        textposition='inside',
+        marker=dict(line=dict(color='rgba(2,6,23,0.5)', width=2))
+    )
+    fig.update_layout(
+        title=dict(text="Distribución de Costo de Flete", font=dict(size=13, color="#ffffff")),
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=220,
+        showlegend=True,
+        legend=dict(
+            orientation="h",
+            y=-0.2,
+            x=0.5,
+            xanchor="center"
+        )
+    )
+    aplicar_estilos_plotly(fig)
+    return fig
+
+def plot_bar_costo_ruta(df):
+    """Gráfico de barras de flete acumulado por ciudad de destino."""
+    cost_col = 'costo_flete' if 'costo_flete' in df.columns else None
+    dest_col = 'destino' if 'destino' in df.columns else None
+    
+    if not cost_col or not dest_col:
+        return go.Figure()
+        
+    df_clean = df.copy()
+    df_clean['Destino'] = df_clean[dest_col].astype(str).str.title()
+    df_grouped = df_clean.groupby('Destino')[cost_col].sum().reset_index()
+    df_grouped = df_grouped.sort_values(by=cost_col, ascending=False).head(8)
+    
+    fig = px.bar(
+        df_grouped,
+        x='Destino',
+        y=cost_col,
+        text_auto='.2s',
+        color=cost_col,
+        color_continuous_scale=['#1d4ed8', '#3b82f6', '#60a5fa'] # Degradado de azul
+    )
+    fig.update_layout(
+        title=dict(text="Costo Acumulado de Flete por Ruta", font=dict(size=13, color="#ffffff")),
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=250,
+        coloraxis_showscale=False
+    )
+    aplicar_estilos_plotly(fig)
+    # Hacer las barras más delgadas y pulidas
+    fig.update_traces(
+        marker=dict(line=dict(color='rgba(255,255,255,0.05)', width=1)),
+        width=0.45
+    )
+    return fig
+
+def plot_bar_cantidad_origen(df):
+    """Gráfico de barras de cantidad de envíos despachados por origen con línea de promedio."""
+    orig_col = 'origen' if 'origen' in df.columns else None
+    if not orig_col:
+        return go.Figure()
+        
+    df_clean = df.copy()
+    df_clean['Origen'] = df_clean[orig_col].astype(str).str.title()
+    df_grouped = df_clean.groupby('Origen').size().reset_index(name='Cantidad')
+    df_grouped = df_grouped.sort_values(by='Cantidad', ascending=False).head(8)
+    
+    fig = px.bar(
+        df_grouped,
+        x='Origen',
+        y='Cantidad',
+        text_auto=True,
+        color='Cantidad',
+        color_continuous_scale=['#4f46e5', '#6366f1', '#818cf8']
+    )
+    
+    avg_val = df_grouped['Cantidad'].mean() if not df_grouped.empty else 0
+    fig.add_hline(
+        y=avg_val,
+        line_dash="dash",
+        line_color="rgba(16, 185, 129, 0.7)",
+        annotation_text=f"Promedio: {avg_val:.1f}",
+        annotation_position="top right",
+        annotation_font=dict(color="#cbd5e1", size=9)
+    )
+    
+    fig.update_layout(
+        title=dict(text="Cantidad de Envíos por Origen (Despacho)", font=dict(size=13, color="#ffffff")),
+        margin=dict(l=10, r=10, t=40, b=10),
+        height=250,
+        coloraxis_showscale=False
+    )
+    aplicar_estilos_plotly(fig)
+    fig.update_traces(
+        marker=dict(line=dict(color='rgba(255,255,255,0.05)', width=1)),
+        width=0.45
+    )
+    return fig
+
+def renderizar_tablero_analitico(df, rol_usuario):
+    """
+    Función maestra para orquestar y dibujar el tablero interactivo de control.
+    Distribuye los elementos en un panel de KPIs lateral izquierdo y gráficos principales a la derecha.
+    """
+    if df is None or df.empty:
+        st.warning("⚠️ No hay registros de envíos que coincidan con los filtros aplicados.")
+        return
+
+    # Sincronización del costo de flete
+    df_clean = df.copy()
+    if 'costo_flete' in df_clean.columns:
+        df_clean['costo_flete'] = pd.to_numeric(df_clean['costo_flete'], errors='coerce').fillna(0)
+    else:
+        df_clean['costo_flete'] = 0.0
+
+    # Grid principal: Columna de KPIs (20%) + Columna de gráficos (80%)
+    col_sidebar, col_main = st.columns([1.3, 4.7])
+    
+    with col_sidebar:
+        st.markdown("<p style='font-size:0.9rem; font-weight:700; color:#38bdf8; text-transform:uppercase; margin-bottom:10px;'>📊 RESUMEN</p>", unsafe_allow_html=True)
+        renderizar_kpis_verticales(df_clean)
+        
+    with col_main:
+        # Fila 1: Costo total (izquierda), Envíos por fecha (centro), Donut costo (derecha)
+        r1_c1, r1_c2, r1_c3 = st.columns([1.2, 2.3, 1.5])
+        
+        with r1_c1:
+            total_cost = df_clean['costo_flete'].sum()
+            avg_cost = df_clean['costo_flete'].mean() if len(df_clean) > 0 else 0
+            
+            # Formatear a Pesos Colombianos según comentarios de aprobación
+            flete_info_costo = f"$ {total_cost:,.0f}" if rol_usuario != 'basico' else "CONFIDENCIAL"
+            flete_info_promedio = f"$ {avg_cost:,.0f}" if rol_usuario != 'basico' else "CONFIDENCIAL"
+            
+            st.markdown(f"""
+            <div class="kpi-card-sidebar" style="height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; padding: 20px;">
+                <div class="kpi-title" style="margin-bottom: 12px; font-size: 0.85rem;">Costo Total de Envío</div>
+                <div class="kpi-value" style="font-size: 1.85rem; color: #38bdf8; line-height: 1.2;">{flete_info_costo}</div>
+                <div style="border-top: 1px solid rgba(255,255,255,0.08); width: 80%; margin: 15px 0;"></div>
+                <div style="font-size: 0.85rem; color: #94a3b8; font-weight: 500;">Promedio: <span style="color: #ffffff; font-weight: 700;">{flete_info_promedio}</span></div>
+            </div>
+            """, unsafe_allow_html=True)
+            
+        with r1_c2:
+            with st.container(border=True):
+                fig_fecha = plot_envios_fecha(df_clean)
+                st.plotly_chart(fig_fecha, use_container_width=True, config={'displayModeBar': False})
+                
+        with r1_c3:
+            with st.container(border=True):
+                if rol_usuario != 'basico':
+                    fig_donut = plot_donut_costo(df_clean)
+                    st.plotly_chart(fig_donut, use_container_width=True, config={'displayModeBar': False})
+                else:
+                    st.markdown("""
+                    <div class="kpi-card-sidebar" style="height: 220px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <span style="font-size: 2rem;">🔒</span>
+                        <div class="kpi-title" style="margin-top: 10px;">Costos Restringidos</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+
+        st.markdown("<div style='margin-top: 15px;'></div>", unsafe_allow_html=True)
+
+        # Fila 2: Costo por ruta (con estadísticas al lado, izquierda), Cantidad de envíos por origen (derecha)
+        r2_c1, r2_c2 = st.columns([2.5, 2.5])
+        
+        with r2_c1:
+            with st.container(border=True):
+                if rol_usuario != 'basico':
+                    # Subgrid para colocar las estadísticas del costo a la izquierda tal cual la imagen
+                    sub_col_stats, sub_col_chart = st.columns([1, 2.4])
+                    
+                    with sub_col_stats:
+                        df_grouped_all = df_clean.groupby('destino')['costo_flete'].sum().reset_index()
+                        
+                        if not df_grouped_all.empty:
+                            idx_max = df_grouped_all['costo_flete'].idxmax()
+                            max_dest = df_grouped_all.loc[idx_max, 'destino'].title()
+                            max_val = df_grouped_all.loc[idx_max, 'costo_flete']
+                            
+                            idx_min = df_grouped_all['costo_flete'].idxmin()
+                            min_dest = df_grouped_all.loc[idx_min, 'destino'].title()
+                            min_val = df_grouped_all.loc[idx_min, 'costo_flete']
+                            
+                            avg_route_val = df_grouped_all['costo_flete'].mean()
+                        else:
+                            max_dest, max_val = "N/A", 0
+                            min_dest, min_val = "N/A", 0
+                            avg_route_val = 0
+                            
+                        st.markdown(f"""
+                        <div style="display: flex; flex-direction: column; gap: 8px; justify-content: center; height: 100%; padding-top: 10px;">
+                            <div>
+                                <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;">📈 Máximo</span>
+                                <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{max_dest}</div>
+                                <div style="font-size: 1.05rem; font-weight: 800; color: #38bdf8;">$ {max_val:,.0f}</div>
+                            </div>
+                            <div style="border-top: 1px solid rgba(255,255,255,0.06); margin: 3px 0;"></div>
+                            <div>
+                                <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;">📊 Promedio</span>
+                                <div style="font-size: 1.05rem; font-weight: 800; color: #ffffff;">$ {avg_route_val:,.0f}</div>
+                            </div>
+                            <div style="border-top: 1px solid rgba(255,255,255,0.06); margin: 3px 0;"></div>
+                            <div>
+                                <span style="font-size: 0.72rem; color: #94a3b8; font-weight: 600; text-transform: uppercase;">📉 Mínimo</span>
+                                <div style="font-size: 0.8rem; font-weight: 700; color: #ffffff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{min_dest}</div>
+                                <div style="font-size: 1.05rem; font-weight: 800; color: #818cf8;">$ {min_val:,.0f}</div>
+                            </div>
+                        </div>
+                        """, unsafe_allow_html=True)
+                        
+                    with sub_col_chart:
+                        fig_bar_costo = plot_bar_costo_ruta(df_clean)
+                        st.plotly_chart(fig_bar_costo, use_container_width=True, config={'displayModeBar': False})
+                else:
+                    st.markdown("""
+                    <div class="kpi-card-sidebar" style="height: 250px; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center;">
+                        <span style="font-size: 2.2rem;">🔒</span>
+                        <div class="kpi-title" style="margin-top: 10px;">Costos de Ruta Restringidos</div>
+                    </div>
+                    """, unsafe_allow_html=True)
+                    
+        with r2_c2:
+            with st.container(border=True):
+                fig_bar_orig = plot_bar_cantidad_origen(df_clean)
+                st.plotly_chart(fig_bar_orig, use_container_width=True, config={'displayModeBar': False})

@@ -30,7 +30,7 @@ def auditar_envio(datos):
     Los datos de entrada siguen el Contrato de Datos Estricto (con guia_id).
     """
     with prolog_lock: # Aseguramos thread-safety para PySwip
-        g = str(datos.get('guia_id')).replace("'", "").strip()
+        g = str(datos.get('guia_id') or datos.get('guia', 'desconocida')).replace("'", "").strip()
         e = str(datos.get('estado', 'preparacion')).replace("'", "").strip()
         c = int(datos.get('costo_flete', 0))
         o = str(datos.get('origen', 'bogota')).replace("'", "").strip().lower()

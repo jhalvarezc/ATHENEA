@@ -216,53 +216,12 @@ elif rol_usuario == "admin":
             'en_revision_doc': '🔍 En Revisión Doc'
         }
 
-        # 4. Panel Control de Operaciones (Sidebar)
-        st.sidebar.markdown("<h2 style='font-size:1.2rem; color:#58a6ff;'>🔍 Controles de Operación</h2>", unsafe_allow_html=True)
-        busqueda_guia = st.sidebar.text_input("Buscar código de guía / remisión:", "").strip()
-        
-        fuentes_disponibles = datos_unificados['fuente'].unique().tolist()
-        fuentes_map = {DICCIONARIO_FUENTES.get(f, f): f for f in fuentes_disponibles if pd.notna(f)}
-        fuentes_sel_amigables = st.sidebar.multiselect("Filtrar por Origen de Datos:", options=list(fuentes_map.keys()), default=list(fuentes_map.keys()))
-        fuentes_sel = [fuentes_map[f] for f in fuentes_sel_amigables]
-        
-        estados_disponibles = datos_unificados['estado'].unique().tolist() if 'estado' in datos_unificados.columns else ['en_ruta']
-        estados_map = {DICCIONARIO_ESTADOS.get(e, str(e).replace('_', ' ').title()): e for e in estados_disponibles if pd.notna(e)}
-        estados_sel_amigables = st.sidebar.multiselect("Filtrar por Estado Lógico:", options=list(estados_map.keys()), default=list(estados_map.keys()))
-        estados_sel = [estados_map[e] for e in estados_sel_amigables]
-        
-        ciudades_disponibles = datos_unificados['destino'].unique().tolist() if 'destino' in datos_unificados.columns else []
-        ciudades_map = {str(c).split('/')[0].strip().title(): c for c in ciudades_disponibles if pd.notna(c)}
-        ciudades_sel_amigables = st.sidebar.multiselect("Filtrar por Destino:", options=list(ciudades_map.keys()), default=list(ciudades_map.keys()))
-        ciudades_sel = [ciudades_map[c] for c in ciudades_sel_amigables]
-        
-        if rol_usuario != 'basico':
-            max_flete = int(datos_unificados['costo_flete'].max()) if 'costo_flete' in datos_unificados.columns else 100000
-            flete_minimo = st.sidebar.slider("Filtrar fletes mayores a ($):", 0, max_flete, 0)
-        else:
-            flete_minimo = 0
-
-        datos_filtrados = datos_unificados[
-            (datos_unificados['fuente'].isin(fuentes_sel)) &
-            (datos_unificados['estado'].isin(estados_sel)) &
-            (datos_unificados['destino'].isin(ciudades_sel)) &
-            (datos_unificados['costo_flete'] >= flete_minimo)
-        ]
-        
-        if busqueda_guia:
-            datos_filtrados = datos_filtrados[datos_filtrados['guia'].str.contains(busqueda_guia, case=False)]
+        # 4. Barra de Filtros Horizontal Premium (reemplaza controles incómodos de sidebar)
+        from ui.filters import renderizar_barra_filtros
+        datos_filtrados = renderizar_barra_filtros(datos_unificados, key_prefix="admin_app", mostrar_flete=(rol_usuario != 'basico'))
 
         st.sidebar.markdown("---")
         st.sidebar.success("🟢 ATHENEA Inference Engine: Activo")
-
-        # 5. Panel de Control de Indicadores (KPIs Dinámicos)
-        kpi1, kpi2, kpi3 = st.columns(3)
-        kpi1.metric("📦 Total Líneas Auditadas", f"{len(datos_filtrados):,}")
-        
-        urgentes = len(datos_filtrados[datos_filtrados['prioridad_alta'] == True]) if 'prioridad_alta' in datos_filtrados.columns else 0
-        kpi2.metric("⚡ SLA Crítico (Urgentes)", urgentes)
-        
-        sobrecostos = len(datos_filtrados[datos_filtrados['alerta_costo'] == True]) if 'alerta_costo' in datos_filtrados.columns else 0
-        kpi3.metric("💰 Fletes con Sobreprecio", sobrecostos)
 
         st.markdown("---")
 
@@ -345,37 +304,11 @@ elif rol_usuario == "admin":
 
             st.markdown("---")
             st.markdown("<h2 style='font-size:1.5rem;'>📊 Métricas y Análisis de la Operación</h2>", unsafe_allow_html=True)
-            
-            col_graf1, col_graf2 = st.columns(2)
-            with col_graf1:
-                with st.container(border=True):
-                    try:
-                        from ui.charts import renderizar_grafico_canal
-                        renderizar_grafico_canal(datos_filtrados)
-                    except Exception as e:
-                        st.error(f"Error cargando gráfica de procedencia: {e}")
-                
-                with st.container(border=True):
-                    try:
-                        from ui.charts import renderizar_grafico_costos
-                        renderizar_grafico_costos(datos_filtrados)
-                    except Exception as e:
-                        st.error(f"Error cargando gráfica de costos: {e}")
-
-            with col_graf2:
-                with st.container(border=True):
-                    try:
-                        from ui.charts import renderizar_grafico_estados
-                        renderizar_grafico_estados(datos_filtrados)
-                    except Exception as e:
-                        st.error(f"Error cargando gráfica de estados: {e}")
-                
-                with st.container(border=True):
-                    try:
-                        from ui.charts import renderizar_grafico_ia
-                        renderizar_grafico_ia(datos_filtrados)
-                    except Exception as e:
-                        st.error(f"Error cargando gráfica de auditoría IA: {e}")
+            try:
+                from ui.charts import renderizar_tablero_analitico
+                renderizar_tablero_analitico(datos_filtrados, rol_usuario)
+            except Exception as e:
+                st.error(f"Error cargando el tablero de análisis: {e}")
 
             # 7. Tablas de Control de Auditorías Específicas
             st.markdown("---")

@@ -243,3 +243,49 @@ span[data-baseweb="tag"] button:hover svg {
     fill: #ef4444 !important;
 }
 
+/* Nuevos Estilos para el Tablero Control Center (KPIs Verticales) */
+.kpi-card-sidebar {
+    background: rgba(30, 41, 59, 0.4) !important;
+    backdrop-filter: blur(8px) !important;
+    -webkit-backdrop-filter: blur(8px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 12px !important;
+    padding: 16px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+.kpi-card-sidebar:hover {
+    transform: translateY(-2px) !important;
+    border-color: rgba(59, 130, 246, 0.3) !important;
+    box-shadow: 0 6px 24px rgba(59, 130, 246, 0.15) !important;
+}
+.kpi-title {
+    font-size: 0.8rem !important;
+    font-weight: 700 !important;
+    color: #94a3b8 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.05em !important;
+}
+.kpi-icon {
+    font-size: 1.15rem !important;
+}
+.kpi-value {
+    font-size: 1.7rem !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    margin-top: 6px !important;
+    font-family: 'Outfit', sans-serif !important;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%) !important;
+    -webkit-background-clip: text !important;
+    background-clip: text !important;
+    -webkit-text-fill-color: transparent !important;
+}
+.kpi-percentage {
+    font-size: 0.76rem !important;
+    font-weight: 600 !important;
+    color: #38bdf8 !important;
+    margin-top: 4px !important;
+    text-transform: none !important;
+}
+
+
