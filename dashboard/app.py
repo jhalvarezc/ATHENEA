@@ -176,7 +176,7 @@ elif rol_usuario == "admin":
     st.sidebar.markdown("<h2 style='font-size:1.2rem; color:#58a6ff;'>🧭 Navegación</h2>", unsafe_allow_html=True)
     opcion = st.sidebar.radio(
         "Selecciona una vista:",
-        ["Cargar Datos (Excel)", "Ver Estadísticas", "Ver Mapa"]
+        ["Cargar Datos (Excel)", "Ver Estadísticas", "Ver Mapa", "🔮 Predicciones IA"]
     )
     
     df_historico = leer_historico()
@@ -358,3 +358,103 @@ elif rol_usuario == "admin":
                 
             df_historico_audit['estado_auditoria'] = estados_auditoria
             renderizar_mapa(df_historico_audit)
+            
+    elif opcion == "🔮 Predicciones IA":
+        st.markdown("### 🔮 Inferencia y Predicciones de Inferencia IA")
+        if df_historico.empty:
+            st.info("No hay datos históricos para proyectar.")
+        else:
+            df_historico_audit = df_historico.copy()
+            estados_auditoria = []
+            for _, row in df_historico_audit.iterrows():
+                dict_row = row.to_dict()
+                try:
+                    dict_row['despacho_dia'] = int(float(dict_row.get('despacho_dia', 1) or 1))
+                    dict_row['despacho_mes'] = int(float(dict_row.get('despacho_mes', 1) or 1))
+                    dict_row['despacho_ano'] = int(float(dict_row.get('despacho_ano', 2026) or 2026))
+                    dict_row['limite_dia'] = int(float(dict_row.get('limite_dia', 1) or 1))
+                    dict_row['limite_mes'] = int(float(dict_row.get('limite_mes', 1) or 1))
+                    dict_row['limite_ano'] = int(float(dict_row.get('limite_ano', 2026) or 2026))
+                    dict_row['costo_flete'] = float(dict_row.get('costo_flete', 0) or 0)
+                except ValueError:
+                    dict_row['despacho_dia'] = 1
+                    dict_row['despacho_mes'] = 1
+                    dict_row['despacho_ano'] = 2026
+                    dict_row['limite_dia'] = 1
+                    dict_row['limite_mes'] = 1
+                    dict_row['limite_ano'] = 2026
+                    dict_row['costo_flete'] = 0.0
+                
+                dict_row['estado'] = dict_row.get('estado', 'en_transito')
+                estados_auditoria.append(auditar_envio(dict_row))
+                
+            df_historico_audit['estado_auditoria'] = estados_auditoria
+            
+            # Mapeo de campos de alertas para compatibilidad
+            alertas_costo = []
+            prioridad_alta = []
+            for _, row in df_historico_audit.iterrows():
+                ea = row['estado_auditoria']
+                alertas_costo.append(ea in ['riesgo_alto', 'critico_financiero'])
+                prioridad_alta.append(ea in ['riesgo_medio', 'riesgo_alto'])
+                
+            df_historico_audit['alerta_costo'] = alertas_costo
+            df_historico_audit['prioridad_alta'] = prioridad_alta
+            
+            try:
+                from brain.forecasting import predecir_operacion
+                forecast = predecir_operacion(df_historico_audit)
+            except Exception as e:
+                st.error(f"Error cargando el módulo de predicción: {e}")
+                forecast = None
+                
+            if forecast:
+                pred_col1, pred_col2 = st.columns(2)
+                with pred_col1:
+                    with st.container(border=True):
+                        st.markdown("<h3 style='font-size:1.2rem; color:#58a6ff;'>💰 Proyección de Costes Fiscales</h3>", unsafe_allow_html=True)
+                        proyectado = forecast['costos']['proyectado']
+                        categoria = forecast['costos']['categoria']
+                        recomendacion = forecast['costos']['recomendacion']
+                        
+                        st.metric("Estimación Costo Final Año (12 meses)", f"${proyectado:,.0f} COP")
+                        
+                        if "Peligro" in categoria:
+                            st.error(f"**Estado:** {categoria}")
+                        elif "Precaucion" in categoria:
+                            st.warning(f"**Estado:** {categoria}")
+                        else:
+                            st.success(f"**Estado:** {categoria}")
+                        
+                        st.info(f"💡 **Recomendación:** {recomendacion}")
+                        
+                with pred_col2:
+                    with st.container(border=True):
+                        st.markdown("<h3 style='font-size:1.2rem; color:#58a6ff;'>⚡ Proyección de Incumplimiento de SLA</h3>", unsafe_allow_html=True)
+                        tasa_sla = forecast['sla']['tasa_fallo']
+                        categoria_sla = forecast['sla']['categoria']
+                        recom_sla = forecast['sla']['recomendacion']
+                        
+                        st.metric("Tasa de Fallo Proyectada en Entregas SLA", f"{tasa_sla:.1f}%")
+                        
+                        if "Critico" in categoria_sla:
+                            st.error(f"**Estado:** {categoria_sla}")
+                        elif "Riesgo" in categoria_sla:
+                            st.warning(f"**Estado:** {categoria_sla}")
+                        else:
+                            st.success(f"**Estado:** {categoria_sla}")
+                            
+                        st.info(f"💡 **Recomendación:** {recom_sla}")
+                        
+                st.markdown("---")
+                st.markdown("<h3 style='font-size:1.3rem;'>🏢 Predicción de Congestión en Hubs Logísticos</h3>", unsafe_allow_html=True)
+                st.write("Análisis de probabilidad de colapso en nodos de llegada basado en la tasa acumulada de novedades.")
+                
+                hubs_data = forecast['hubs']
+                if hubs_data:
+                    df_hubs_visual = pd.DataFrame(hubs_data)
+                    df_hubs_visual.columns = ["Hub (Ciudad)", "Tasa Novedades (%)", "Riesgo Predicho", "Recomendación Operativa"]
+                    df_hubs_visual["Tasa Novedades (%)"] = df_hubs_visual["Tasa Novedades (%)"].map(lambda x: f"{x:.1f}%")
+                    st.dataframe(df_hubs_visual, use_container_width=True, hide_index=True)
+                else:
+                    st.info("No hay datos de distribución geográfica para proyectar.")

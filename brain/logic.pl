@@ -136,4 +136,60 @@ analisis_ruta_completa(Guia, Origen, Destino, Diagnostico, FechaActual) :-
         alerta_critica(Guia) -> Diagnostico = critico_financiero ;
         estado_envio(Guia, entregado) -> Diagnostico = entregado_ok ;
         Diagnostico = en_transito_optimo
+    ).
+
+% ---------------------------------------------------------
+% 8. MOTOR DE PREDICCIONES Y PROYECCIONES
+% ---------------------------------------------------------
+:- dynamic datos_fiscales/3.        % datos_fiscales(MesActual, CostoAcumulado, TotalEnvios)
+:- dynamic estadisticas_hub/3.      % estadisticas_hub(Ciudad, EnviosConNovedad, TotalEnvios)
+:- dynamic estadisticas_sla/2.      % estadisticas_sla(UrgentesNoEntregados, TotalUrgentes)
+
+% Proyección del costo total para el final del año (12 meses)
+prediccion_costo_anual(CostoProyectado, CategoriaAlerta, Recomendacion) :-
+    datos_fiscales(MesActual, CostoAcumulado, _),
+    MesActual > 0,
+    MesActual =< 12,
+    CostoProyectado is (CostoAcumulado / MesActual) * 12,
+    ( CostoProyectado > 1500000 ->
+        CategoriaAlerta = 'Peligro (Sobrepresupuesto)',
+        Recomendacion = 'Alerta: El costo anual proyectado supera el presupuesto establecido. Se recomienda renegociar contratos de fletes y limitar envios urgentes.'
+    ; CostoProyectado > 1000000 ->
+        CategoriaAlerta = 'Precaucion (Moderado)',
+        Recomendacion = 'Advertencia: El costo proyectado se acerca al limite presupuestario. Monitorear los sobrecostos de fletes reportados por el motor de inferencia.'
+    ;
+        CategoriaAlerta = 'Seguro (Bajo Riesgo)',
+        Recomendacion = 'Normal: El ritmo de gasto anual actual se mantiene dentro de los margenes optimos presupuestados.'
+    ).
+
+% Predicción de embotellamientos en hubs
+prediccion_embotellamiento(Ciudad, TasaNovedades, NivelRiesgo, Recomendacion) :-
+    estadisticas_hub(Ciudad, ConNovedad, Total),
+    Total > 0,
+    TasaNovedades is (ConNovedad / Total) * 100,
+    ( TasaNovedades > 30 ->
+        NivelRiesgo = 'Alto Riesgo',
+        Recomendacion = 'Prediccion de Bloqueo: Alta tasa de novedades. Desviar despachos no criticos a otros hubs y realizar auditoria fisica de bodega.'
+    ; TasaNovedades > 15 ->
+        NivelRiesgo = 'Riesgo Moderado',
+        Recomendacion = 'Alerta Operativa: Tasa de novedades en aumento. Revisar capacidad de transportadoras asignadas en la zona.'
+    ;
+        NivelRiesgo = 'Operacion Estable',
+        Recomendacion = 'Flujo normal: Hub operativo estable y dentro de la capacidad nominal de red.'
+    ).
+
+% Predicción de fallos de SLA
+prediccion_sla(TasaFallo, Categoria, Recomendacion) :-
+    estadisticas_sla(NoEntregados, Total),
+    Total > 0,
+    TasaFallo is (NoEntregados / Total) * 100,
+    ( TasaFallo > 40 ->
+        Categoria = 'Incumplimiento Critico',
+        Recomendacion = 'Alerta SLA: Alta tasa de fallos de entrega urgentes. Se recomienda cambiar de proveedor de transporte en rutas criticas.'
+    ; TasaFallo > 20 ->
+        Categoria = 'Riesgo Moderado',
+        Recomendacion = 'Atencion SLA: Retrasos en despacho detectados. Agilizar procesos internos de cargue.'
+    ;
+        Categoria = 'SLA Cumplido',
+        Recomendacion = 'Excelente: Las entregas criticas se encuentran dentro del rango operativo aceptable.'
     ).    

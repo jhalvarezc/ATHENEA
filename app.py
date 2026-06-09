@@ -266,148 +266,219 @@ elif rol_usuario == "admin":
 
         st.markdown("---")
 
-        # 6. Monitoreo Geográfico de Redes y Canales (Mapa + Gráfico)
-        st.markdown("<h2 style='font-size:1.5rem;'>🗺️ Monitoreo de Red Geográfica</h2>", unsafe_allow_html=True)
-        list_guias = sorted([str(g) for g in datos_filtrados['guia'].unique().tolist()])
+        tab_operativo, tab_predicciones = st.tabs([
+            "🗺️ Monitoreo Operativo y Gráficas", 
+            "🔮 Inferencia y Predicciones de Inferencia IA"
+        ])
 
-        with st.container(border=True):
-            if list_guias:
-                guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
-                fila_guia = datos_filtrados[datos_filtrados['guia'] == guia_seleccionada].iloc[0]
-                
-                flete_info = f" | **Flete:** ${fila_guia['costo_flete']:,} COP" if rol_usuario != 'basico' else ""
-                st.info(f"📍 **Detalle Actual:** {fila_guia['guia']} | **Origen:** {str(fila_guia['origen']).upper()} | **Destino:** {str(fila_guia['destino']).upper()}{flete_info} | **Fuente:** {fila_guia['fuente']}")
-                
-                # --- 🛡️ BLINDAJE GEOGRÁFICO CONTRA COORDENADAS NaN ---
-                try:
-                    ciudad_orig = str(fila_guia['origen']).split('/')[0].strip()
-                    ciudad_dest = str(fila_guia['destino']).split('/')[0].strip()
+        with tab_operativo:
+            # 6. Monitoreo Geográfico de Redes y Canales (Mapa + Gráfico)
+            st.markdown("<h2 style='font-size:1.5rem;'>🗺️ Monitoreo de Red Geográfica</h2>", unsafe_allow_html=True)
+            list_guias = sorted([str(g) for g in datos_filtrados['guia'].unique().tolist()])
+
+            with st.container(border=True):
+                if list_guias:
+                    guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
+                    fila_guia = datos_filtrados[datos_filtrados['guia'] == guia_seleccionada].iloc[0]
                     
-                    ciudad_orig_norm = normalizar_ciudad(ciudad_orig)
-                    ciudad_dest_norm = normalizar_ciudad(ciudad_dest)
+                    flete_info = f" | **Flete:** ${fila_guia['costo_flete']:,} COP" if rol_usuario != 'basico' else ""
+                    st.info(f"📍 **Detalle Actual:** {fila_guia['guia']} | **Origen:** {str(fila_guia['origen']).upper()} | **Destino:** {str(fila_guia['destino']).upper()}{flete_info} | **Fuente:** {fila_guia['fuente']}")
+                    
+                    # --- 🛡️ BLINDAJE GEOGRÁFICO CONTRA COORDENADAS NaN ---
+                    try:
+                        ciudad_orig = str(fila_guia['origen']).split('/')[0].strip()
+                        ciudad_dest = str(fila_guia['destino']).split('/')[0].strip()
+                        
+                        ciudad_orig_norm = normalizar_ciudad(ciudad_orig)
+                        ciudad_dest_norm = normalizar_ciudad(ciudad_dest)
 
-                    if 'origen_latitude' not in fila_guia or pd.isna(fila_guia['origen_latitude']) or float(fila_guia['origen_latitude']) == 0:
-                        orig_lat = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
-                        orig_lon = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
+                        if 'origen_latitude' not in fila_guia or pd.isna(fila_guia['origen_latitude']) or float(fila_guia['origen_latitude']) == 0:
+                            orig_lat = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
+                            orig_lon = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
+                        else:
+                            orig_lat = float(fila_guia['origen_latitude'])
+                            orig_lon = float(fila_guia['origen_longitude'])
+
+                        if 'destino_latitude' not in fila_guia or pd.isna(fila_guia['destino_latitude']) or float(fila_guia['destino_latitude']) == 0:
+                            dest_lat = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
+                            dest_lon = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
+                        else:
+                            dest_lat = float(fila_guia['destino_latitude'])
+                            dest_lon = float(fila_guia['destino_longitude'])
+                    except Exception:
+                        orig_lat, orig_lon = 4.6097, -74.0817
+                        dest_lat, dest_lon = 6.2442, -75.5812
+                    # ----------------------------------------------------
+
+                    coordenadas_carretera = obtener_ruta_calle(orig_lon, orig_lat, dest_lon, dest_lat)
+                    
+                    if coordenadas_carretera and len(coordenadas_carretera) > 0:
+                        color_linea = [88, 166, 255, 255]
+                        df_ruta_mapa = pd.DataFrame([{'path': coordenadas_carretera, 'color': color_linea}])
+                        
+                        capa_camino_carreteras = pdk.Layer(
+                            "PathLayer", 
+                            data=df_ruta_mapa, 
+                            get_path="path", 
+                            get_color="color", 
+                            width_scale=20, 
+                            width_min_pixels=4
+                        )
+                        
+                        view_state = pdk.ViewState(
+                            latitude=(orig_lat + dest_lat) / 2,
+                            longitude=(orig_lon + dest_lon) / 2,
+                            zoom=5.3,
+                            pitch=20
+                        )
+                        
+                        st.pydeck_chart(pdk.Deck(
+                            map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json", 
+                            initial_view_state=view_state, 
+                            layers=[capa_camino_carreteras]
+                        ))
                     else:
-                        orig_lat = float(fila_guia['origen_latitude'])
-                        orig_lon = float(fila_guia['origen_longitude'])
+                        st.error("⚠️ No se pudo trazar la ruta terrestre. Verifique las coordenadas de los nodos.")
+                else:
+                    st.warning("No existen registros válidos con las restricciones aplicadas en los controles.")
 
-                    if 'destino_latitude' not in fila_guia or pd.isna(fila_guia['destino_latitude']) or float(fila_guia['destino_latitude']) == 0:
-                        dest_lat = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
-                        dest_lon = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
-                    else:
-                        dest_lat = float(fila_guia['destino_latitude'])
-                        dest_lon = float(fila_guia['destino_longitude'])
-                except Exception:
-                    orig_lat, orig_lon = 4.6097, -74.0817
-                    dest_lat, dest_lon = 6.2442, -75.5812
-                # ----------------------------------------------------
-
-                coordenadas_carretera = obtener_ruta_calle(orig_lon, orig_lat, dest_lon, dest_lat)
+            st.markdown("---")
+            st.markdown("<h2 style='font-size:1.5rem;'>📊 Métricas y Análisis de la Operación</h2>", unsafe_allow_html=True)
+            
+            col_graf1, col_graf2 = st.columns(2)
+            with col_graf1:
+                with st.container(border=True):
+                    try:
+                        from ui.charts import renderizar_grafico_canal
+                        renderizar_grafico_canal(datos_filtrados)
+                    except Exception as e:
+                        st.error(f"Error cargando gráfica de procedencia: {e}")
                 
-                if coordenadas_carretera and len(coordenadas_carretera) > 0:
-                    color_linea = [88, 166, 255, 255]
-                    df_ruta_mapa = pd.DataFrame([{'path': coordenadas_carretera, 'color': color_linea}])
-                    
-                    capa_camino_carreteras = pdk.Layer(
-                        "PathLayer", 
-                        data=df_ruta_mapa, 
-                        get_path="path", 
-                        get_color="color", 
-                        width_scale=20, 
-                        width_min_pixels=4
-                    )
-                    
-                    view_state = pdk.ViewState(
-                        latitude=(orig_lat + dest_lat) / 2,
-                        longitude=(orig_lon + dest_lon) / 2,
-                        zoom=5.3,
-                        pitch=20
-                    )
-                    
-                    st.pydeck_chart(pdk.Deck(
-                        map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json", 
-                        initial_view_state=view_state, 
-                        layers=[capa_camino_carreteras]
-                    ))
-                else:
-                    st.error("⚠️ No se pudo trazar la ruta terrestre. Verifique las coordenadas de los nodos.")
-            else:
-                st.warning("No existen registros válidos con las restricciones aplicadas en los controles.")
+                with st.container(border=True):
+                    try:
+                        from ui.charts import renderizar_grafico_costos
+                        renderizar_grafico_costos(datos_filtrados)
+                    except Exception as e:
+                        st.error(f"Error cargando gráfica de costos: {e}")
 
-        st.markdown("---")
-        st.markdown("<h2 style='font-size:1.5rem;'>📊 Métricas y Análisis de la Operación</h2>", unsafe_allow_html=True)
-        
-        col_graf1, col_graf2 = st.columns(2)
-        with col_graf1:
-            with st.container(border=True):
-                try:
-                    from ui.charts import renderizar_grafico_canal
-                    renderizar_grafico_canal(datos_filtrados)
-                except Exception as e:
-                    st.error(f"Error cargando gráfica de procedencia: {e}")
-            
-            with st.container(border=True):
-                try:
-                    from ui.charts import renderizar_grafico_costos
-                    renderizar_grafico_costos(datos_filtrados)
-                except Exception as e:
-                    st.error(f"Error cargando gráfica de costos: {e}")
+            with col_graf2:
+                with st.container(border=True):
+                    try:
+                        from ui.charts import renderizar_grafico_estados
+                        renderizar_grafico_estados(datos_filtrados)
+                    except Exception as e:
+                        st.error(f"Error cargando gráfica de estados: {e}")
+                
+                with st.container(border=True):
+                    try:
+                        from ui.charts import renderizar_grafico_ia
+                        renderizar_grafico_ia(datos_filtrados)
+                    except Exception as e:
+                        st.error(f"Error cargando gráfica de auditoría IA: {e}")
 
-        with col_graf2:
-            with st.container(border=True):
-                try:
-                    from ui.charts import renderizar_grafico_estados
-                    renderizar_grafico_estados(datos_filtrados)
-                except Exception as e:
-                    st.error(f"Error cargando gráfica de estados: {e}")
+            # 7. Tablas de Control de Auditorías Específicas
+            st.markdown("---")
+            columnas_ocultar = []
+            if rol_usuario == 'basico':
+                columnas_ocultar = ['costo_flete', 'recomendaciones']
+                
+            columnas_mostrar = ['guia', 'origen', 'destino', 'estado', 'costo_flete', 'diagnostico_ia', 'fuente', 'recomendaciones']
+            columnas_mostrar = [c for c in columnas_mostrar if c not in columnas_ocultar]
             
-            with st.container(border=True):
-                try:
-                    from ui.charts import renderizar_grafico_ia
-                    renderizar_grafico_ia(datos_filtrados)
-                except Exception as e:
-                    st.error(f"Error cargando gráfica de auditoría IA: {e}")
-
-        # 7. Tablas de Control de Auditorías Específicas
-        st.markdown("---")
-        columnas_ocultar = []
-        if rol_usuario == 'basico':
-            columnas_ocultar = ['costo_flete', 'recomendaciones']
+            columnas_validas = [col for col in columnas_mostrar if col in datos_filtrados.columns]
             
-        columnas_mostrar = ['guia', 'origen', 'destino', 'estado', 'costo_flete', 'diagnostico_ia', 'fuente', 'recomendaciones']
-        columnas_mostrar = [c for c in columnas_mostrar if c not in columnas_ocultar]
-        
-        columnas_validas = [col for col in columnas_mostrar if col in datos_filtrados.columns]
-        
-        f2_A, f2_B = st.columns(2)
-        with f2_A:
-            with st.container(border=True):
-                st.markdown("<h3 style='font-size:1.1rem; color:#ef4444;'>🚨 Auditoría de Riesgos y Alertas Críticas</h3>", unsafe_allow_html=True)
-                df_alertas = datos_filtrados[datos_filtrados['diagnostico_ia'] == 'critico_financiero']
-                if not df_alertas.empty:
-                    st.dataframe(df_alertas[columnas_validas], width="stretch")
-                else:
-                    st.info("No se detectaron alertas críticas con los filtros actuales.")
-            
-        with f2_B:
-            with st.container(border=True):
-                st.markdown("<h3 style='font-size:1.1rem; color:#f28c0f;'>💰 Tarifas Fuera de Estándar (Prolog)</h3>", unsafe_allow_html=True)
-                if 'alerta_costo' in datos_filtrados.columns:
-                    df_caros = datos_filtrados[datos_filtrados['alerta_costo'] == True]
-                    if not df_caros.empty:
-                        st.dataframe(df_caros[columnas_validas], width="stretch")
+            f2_A, f2_B = st.columns(2)
+            with f2_A:
+                with st.container(border=True):
+                    st.markdown("<h3 style='font-size:1.1rem; color:#ef4444;'>🚨 Auditoría de Riesgos y Alertas Críticas</h3>", unsafe_allow_html=True)
+                    df_alertas = datos_filtrados[datos_filtrados['diagnostico_ia'] == 'critico_financiero']
+                    if not df_alertas.empty:
+                        st.dataframe(df_alertas[columnas_validas], width="stretch")
                     else:
-                        st.info("No hay fletes con sobreprecio detectados.")
+                        st.info("No se detectaron alertas críticas con los filtros actuales.")
+                
+            with f2_B:
+                with st.container(border=True):
+                    st.markdown("<h3 style='font-size:1.1rem; color:#f28c0f;'>💰 Tarifas Fuera de Estándar (Prolog)</h3>", unsafe_allow_html=True)
+                    if 'alerta_costo' in datos_filtrados.columns:
+                        df_caros = datos_filtrados[datos_filtrados['alerta_costo'] == True]
+                        if not df_caros.empty:
+                            st.dataframe(df_caros[columnas_validas], width="stretch")
+                        else:
+                            st.info("No hay fletes con sobreprecio detectados.")
+                    else:
+                        st.caption("Esperando inicialización de métricas de costo.")
+     
+            # 8. Repositorio de Trazabilidad Total Completo
+            st.markdown("---")
+            st.markdown("<h2 style='font-size:1.4rem;'>📋 Repositorio Central de Trazabilidad Logística</h2>", unsafe_allow_html=True)
+            with st.container(border=True):
+                st.dataframe(datos_filtrados[columnas_validas], width="stretch")
+
+        with tab_predicciones:
+            st.markdown("<h2 style='font-size:1.5rem;'>🔮 Inferencia y Predicciones de Inferencia IA</h2>", unsafe_allow_html=True)
+            st.write("Predicciones y análisis de tendencias calculados en tiempo real por el motor lógico de inferencia y forecast.")
+            
+            try:
+                from brain.forecasting import predecir_operacion
+                forecast = predecir_operacion(datos_filtrados)
+            except Exception as e:
+                st.error(f"Error cargando módulo predictivo: {e}")
+                forecast = None
+                
+            if forecast:
+                pred_col1, pred_col2 = st.columns(2)
+                
+                with pred_col1:
+                    with st.container(border=True):
+                        st.markdown("<h3 style='font-size:1.2rem; color:#58a6ff;'>💰 Proyección de Costes Fiscales</h3>", unsafe_allow_html=True)
+                        proyectado = forecast['costos']['proyectado']
+                        categoria = forecast['costos']['categoria']
+                        recomendacion = forecast['costos']['recomendacion']
+                        
+                        st.metric("Estimación Costo Final Año (12 meses)", f"${proyectado:,.0f} COP")
+                        
+                        if "Peligro" in categoria:
+                            st.error(f"**Estado:** {categoria}")
+                        elif "Precaucion" in categoria:
+                            st.warning(f"**Estado:** {categoria}")
+                        else:
+                            st.success(f"**Estado:** {categoria}")
+                        
+                        st.info(f"💡 **Recomendación:** {recomendacion}")
+                        
+                with pred_col2:
+                    with st.container(border=True):
+                        st.markdown("<h3 style='font-size:1.2rem; color:#58a6ff;'>⚡ Proyección de Incumplimiento de SLA</h3>", unsafe_allow_html=True)
+                        tasa_sla = forecast['sla']['tasa_fallo']
+                        categoria_sla = forecast['sla']['categoria']
+                        recom_sla = forecast['sla']['recomendacion']
+                        
+                        st.metric("Tasa de Fallo Proyectada en Entregas SLA", f"{tasa_sla:.1f}%")
+                        
+                        if "Critico" in categoria_sla:
+                            st.error(f"**Estado:** {categoria_sla}")
+                        elif "Riesgo" in categoria_sla:
+                            st.warning(f"**Estado:** {categoria_sla}")
+                        else:
+                            st.success(f"**Estado:** {categoria_sla}")
+                            
+                        st.info(f"💡 **Recomendación:** {recom_sla}")
+                        
+                st.markdown("---")
+                st.markdown("<h3 style='font-size:1.3rem;'>🏢 Predicción de Congestión en Hubs Logísticos</h3>", unsafe_allow_html=True)
+                st.write("Análisis de probabilidad de colapso en nodos de llegada basado en la tasa acumulada de novedades.")
+                
+                hubs_data = forecast['hubs']
+                if hubs_data:
+                    df_hubs_visual = pd.DataFrame(hubs_data)
+                    df_hubs_visual.columns = ["Hub (Ciudad)", "Tasa Novedades (%)", "Riesgo Predicho", "Recomendación Operativa"]
+                    
+                    df_hubs_visual["Tasa Novedades (%)"] = df_hubs_visual["Tasa Novedades (%)"].map(lambda x: f"{x:.1f}%")
+                    
+                    st.dataframe(df_hubs_visual, use_container_width=True, hide_index=True)
                 else:
-                    st.caption("Esperando inicialización de métricas de costo.")
- 
-        # 8. Repositorio de Trazabilidad Total Completo
-        st.markdown("---")
-        st.markdown("<h2 style='font-size:1.4rem;'>📋 Repositorio Central de Trazabilidad Logística</h2>", unsafe_allow_html=True)
-        with st.container(border=True):
-            st.dataframe(datos_filtrados[columnas_validas], width="stretch")
+                    st.info("No hay datos de distribución geográfica para proyectar.")
 
     except Exception as e:
         st.error(f"Error general en la orquestación modular: {e}")
