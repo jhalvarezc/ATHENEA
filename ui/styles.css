@@ -199,3 +199,47 @@ hr {
 ::-webkit-scrollbar-thumb:hover {
     background: rgba(255, 255, 255, 0.2);
 }
+
+/* Personalización de Pastillas / Filtros seleccionados (Multiselect Tags) */
+span[data-baseweb="tag"] {
+    background: rgba(30, 41, 59, 0.75) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 8px !important;
+    padding: 3px 8px !important;
+    margin: 3px 3px 3px 0 !important;
+    max-width: 100% !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    transition: all 0.2s ease !important;
+}
+span[data-baseweb="tag"]:hover {
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    background: rgba(30, 41, 59, 0.95) !important;
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.15) !important;
+}
+span[data-baseweb="tag"] > span {
+    color: #e2e8f0 !important;
+    font-size: 0.82rem !important;
+    font-weight: 600 !important;
+    overflow: visible !important;
+    text-overflow: clip !important;
+    white-space: normal !important;
+}
+span[data-baseweb="tag"] button, 
+span[data-baseweb="tag"] [role="presentation"],
+span[data-baseweb="tag"] svg {
+    margin-left: 6px !important;
+    border-radius: 50% !important;
+    color: #94a3b8 !important;
+    fill: #94a3b8 !important;
+    transition: all 0.2s ease !important;
+}
+span[data-baseweb="tag"] button:hover {
+    background-color: rgba(239, 68, 68, 0.15) !important;
+}
+span[data-baseweb="tag"] button:hover svg {
+    color: #ef4444 !important;
+    fill: #ef4444 !important;
+}
+
