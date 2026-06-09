@@ -1,12 +1,21 @@
 # ui/auth.py - Módulo de Autenticación y Control de Roles para ATHENEA
 import streamlit as st
 import time
+import os
 
-# Base de datos simulada de usuarios
-USUARIOS = {
-    "admin": {"clave": "admin123", "rol": "admin"},
-    "operador": {"clave": "operador123", "rol": "basico"}
-}
+# Base de datos simulada de usuarios configurada mediante variables de entorno
+def get_usuarios():
+    usuarios = {}
+
+    admin_pass = os.environ.get("ADMIN_PASSWORD")
+    if admin_pass:
+        usuarios["admin"] = {"clave": admin_pass, "rol": "admin"}
+
+    operador_pass = os.environ.get("OPERATOR_PASSWORD")
+    if operador_pass:
+        usuarios["operador"] = {"clave": operador_pass, "rol": "basico"}
+
+    return usuarios
 
 def requerir_autenticacion():
     """
@@ -146,7 +155,8 @@ def requerir_autenticacion():
             submit = st.form_submit_button("Ingresar", use_container_width=True)
             
             if submit:
-                user_info = USUARIOS.get(username)
+                usuarios = get_usuarios()
+                user_info = usuarios.get(username)
                 if user_info and user_info["clave"] == password:
                     st.session_state["usuario_autenticado"] = True
                     st.session_state["rol"] = user_info["rol"]
