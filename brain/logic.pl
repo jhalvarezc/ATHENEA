@@ -192,4 +192,34 @@ prediccion_sla(TasaFallo, Categoria, Recomendacion) :-
     ;
         Categoria = 'SLA Cumplido',
         Recomendacion = 'Excelente: Las entregas criticas se encuentran dentro del rango operativo aceptable.'
+    ).
+
+% Obtiene el hub con la tasa más alta de novedades (cuello de botella principal)
+mayor_cuello_botella(Ciudad, TasaMax, Recomendacion) :-
+    estadisticas_hub(Ciudad, Novedades, Total),
+    Total > 0,
+    TasaMax is (Novedades / Total) * 100,
+    TasaMax > 0,
+    % Asegurar que no hay otra ciudad con tasa estrictamente mayor
+    not((
+        estadisticas_hub(OtraCiudad, OtraNov, OtraTot),
+        OtraTot > 0,
+        OtraCiudad \= Ciudad,
+        OtraTasa is (OtraNov / OtraTot) * 100,
+        OtraTasa > TasaMax
+    )),
+    Recomendacion = 'PUNTO CRITICO DE CUELLO DE BOTELLA: Este Hub presenta la mayor concentracion de novedades. Desviar despachos no urgentes de inmediato.'.
+
+% Determina si una guía es urgente (prioridad alta, retrasos de despacho/transporte o costo muy alto)
+guia_urgente(Guia, Origen, Destino, Estado, Costo, Diagnostico) :-
+    estado_envio(Guia, Estado),
+    origen_envio(Guia, Origen),
+    destino_envio(Guia, Destino),
+    costo_flete(Guia, Costo),
+    (
+        alerta_critica(Guia) -> Diagnostico = 'Sobrecosto Financiero Extremo' ;
+        flete_sospechoso(Guia) -> Diagnostico = 'Posible Fraude Interno' ;
+        retraso_por_despacho(Guia, fecha(7, 6, 2026)) -> Diagnostico = 'Retraso Critico en Bodega' ;
+        retraso_por_transporte(Guia, fecha(7, 6, 2026)) -> Diagnostico = 'Retraso de Ruta' ;
+        entrega_urgente(Guia) -> Diagnostico = 'Margen de SLA Critico'
     ).    

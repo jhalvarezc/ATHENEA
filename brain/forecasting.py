@@ -59,7 +59,8 @@ def predecir_operacion(df):
             'tasa_fallo': 0.0,
             'categoria': 'SLA Cumplido',
             'recomendacion': 'Excelente: Las entregas críticas se encuentran estables.'
-        }
+        },
+        'max_hub': None
     }
 
     # 3. Inyección e Inferencia en Prolog (Dentro del candado multi-hilo)
@@ -136,7 +137,19 @@ def predecir_operacion(df):
             # Ordenar por nivel de riesgo / tasa novedades descendente
             predicciones['hubs'] = sorted(hubs_predicciones, key=lambda x: x['tasa_novedades'], reverse=True)
 
-            # H. Limpiar hechos temporales tras la inferencia
+            # H. Consultar Punto de Mayor Cuello de Botella en Prolog
+            res_max_hub = list(prolog_instance.query("mayor_cuello_botella(Ciudad, TasaMax, Rec)"))
+            if res_max_hub:
+                sol_max = res_max_hub[0]
+                ciudad_val = sol_max['Ciudad'].decode('utf-8') if isinstance(sol_max['Ciudad'], bytes) else str(sol_max['Ciudad'])
+                rec_val = sol_max['Rec'].decode('utf-8') if isinstance(sol_max['Rec'], bytes) else str(sol_max['Rec'])
+                predicciones['max_hub'] = {
+                    'ciudad': ciudad_val.upper(),
+                    'tasa_novedades': float(sol_max['TasaMax']),
+                    'recomendacion': rec_val
+                }
+
+            # I. Limpiar hechos temporales tras la inferencia
             list(prolog_instance.query("retractall(datos_fiscales(_, _, _))"))
             list(prolog_instance.query("retractall(estadisticas_hub(_, _, _))"))
             list(prolog_instance.query("retractall(estadisticas_sla(_, _))"))
@@ -170,5 +183,15 @@ def predecir_operacion(df):
                 'recomendacion': rec
             })
         predicciones['hubs'] = sorted(hubs_py, key=lambda x: x['tasa_novedades'], reverse=True)
+        
+        # Fallback en Python para max_hub
+        if hubs_py:
+            max_item = max(hubs_py, key=lambda x: x['tasa_novedades'])
+            if max_item['tasa_novedades'] > 0:
+                predicciones['max_hub'] = {
+                    'ciudad': max_item['ciudad'].upper(),
+                    'tasa_novedades': max_item['tasa_novedades'],
+                    'recomendacion': f"PUNTO CRITICO DE CUELLO DE BOTELLA (Heurística): El Hub {max_item['ciudad'].upper()} tiene la mayor tasa de novedades de la red ({max_item['tasa_novedades']:.1f}%)."
+                }
 
     return predicciones

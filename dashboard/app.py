@@ -176,7 +176,7 @@ elif rol_usuario == "admin":
     st.sidebar.markdown("<h2 style='font-size:1.2rem; color:#58a6ff;'>🧭 Navegación</h2>", unsafe_allow_html=True)
     opcion = st.sidebar.radio(
         "Selecciona una vista:",
-        ["Cargar Datos (Excel)", "Ver Estadísticas", "Ver Mapa", "🔮 Predicciones IA"]
+        ["Cargar Datos (Excel)", "Ver Estadísticas", "Ver Mapa", "🚨 Guías Urgentes", "🔮 Predicciones IA"]
     )
     
     df_historico = leer_historico()
@@ -359,6 +359,125 @@ elif rol_usuario == "admin":
             df_historico_audit['estado_auditoria'] = estados_auditoria
             renderizar_mapa(df_historico_audit)
             
+    elif opcion == "🚨 Guías Urgentes":
+        st.components.v1.html("""
+        <div style="text-align: center; padding: 10px 0;">
+            <h1 id="animated-title" style="font-family: 'Outfit', -apple-system, sans-serif; font-weight: 800; color: #ffffff; margin: 0; font-size: 2.2rem; opacity: 0; transform: translateY(30px); letter-spacing: -0.02em;">
+                🚨 Alertas de Guías Urgentes (SLA Crítico)
+            </h1>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+        <script>
+            setTimeout(() => {
+                const title = document.getElementById('animated-title');
+                if (title) {
+                    const text = title.textContent.trim();
+                    title.innerHTML = '';
+                    for (let char of text) {
+                        const span = document.createElement('span');
+                        span.textContent = char;
+                        span.style.display = 'inline-block';
+                        span.style.opacity = '0';
+                        span.style.transform = 'translateY(30px)';
+                        if (char === ' ') {
+                            span.innerHTML = '&nbsp;';
+                        }
+                        title.appendChild(span);
+                    }
+                    title.style.opacity = '1';
+                    title.style.transform = 'none';
+                    
+                    gsap.to(title.children, {
+                        opacity: 1,
+                        y: 0,
+                        duration: 1.0,
+                        stagger: 0.03,
+                        ease: 'power3.out'
+                    });
+                }
+            }, 50);
+        </script>
+        """, height=80)
+        
+        st.write("Listado de envíos que requieren atención inmediata debido a demoras de tránsito, despacho o alertas de tarifas elevadas (motor de inferencia Prolog).")
+        
+        if df_historico.empty:
+            st.info("No hay datos históricos para analizar.")
+        else:
+            try:
+                from brain.prolog_driver import prolog_instance, prolog_lock
+                with prolog_lock:
+                    list(prolog_instance.query("retractall(estado_envio(_, _))"))
+                    list(prolog_instance.query("retractall(costo_flete(_, _))"))
+                    list(prolog_instance.query("retractall(origen_envio(_, _))"))
+                    list(prolog_instance.query("retractall(destino_envio(_, _))"))
+                    list(prolog_instance.query("retractall(fecha_despacho(_, _))"))
+                    list(prolog_instance.query("retractall(limite_entrega(_, _))"))
+                    
+                    for _, row in df_historico.iterrows():
+                        g = str(row.get('guia', '')).strip()
+                        e = str(row.get('estado', 'preparacion')).strip()
+                        c = int(row.get('costo_flete', 0))
+                        o = str(row.get('origen', 'bogota')).strip().lower()
+                        d = str(row.get('destino', 'medellin')).strip().lower()
+                        d_dia = int(row.get('despacho_dia', 1))
+                        d_mes = int(row.get('despacho_mes', 1))
+                        d_ano = int(row.get('despacho_ano', 2026))
+                        l_dia = int(row.get('limite_dia', 1))
+                        l_mes = int(row.get('limite_mes', 1))
+                        l_ano = int(row.get('limite_ano', 2026))
+                        
+                        prolog_instance.assertz(f"estado_envio('{g}', {e})")
+                        prolog_instance.assertz(f"costo_flete('{g}', {c})")
+                        prolog_instance.assertz(f"origen_envio('{g}', '{o}')")
+                        prolog_instance.assertz(f"destino_envio('{g}', '{d}')")
+                        prolog_instance.assertz(f"fecha_despacho('{g}', fecha({d_dia}, {d_mes}, {d_ano}))")
+                        prolog_instance.assertz(f"limite_entrega('{g}', fecha({l_dia}, {l_mes}, {l_ano}))")
+                    
+                    res_urg = list(prolog_instance.query("guia_urgente(Guia, Origen, Destino, Estado, Costo, Diagnostico)"))
+                    
+                    list(prolog_instance.query("retractall(estado_envio(_, _))"))
+                    list(prolog_instance.query("retractall(costo_flete(_, _))"))
+                    list(prolog_instance.query("retractall(origen_envio(_, _))"))
+                    list(prolog_instance.query("retractall(destino_envio(_, _))"))
+                    list(prolog_instance.query("retractall(fecha_despacho(_, _))"))
+                    list(prolog_instance.query("retractall(limite_entrega(_, _))"))
+
+                list_urgentes = []
+                DICCIONARIO_ESTADOS_LOCAL = {
+                    'en_bodega': '📦 En Bodega',
+                    'en_transito': '🚛 En Tránsito',
+                    'en_novedad': '⚠️ En Novedad',
+                    'entregado': '✅ Entregado',
+                    'preparacion': '📝 En Preparación',
+                    'en_revision_doc': '🔍 En Revisión Doc'
+                }
+                for r in res_urg:
+                    g = r['Guia'].decode('utf-8') if isinstance(r['Guia'], bytes) else str(r['Guia'])
+                    o = r['Origen'].decode('utf-8') if isinstance(r['Origen'], bytes) else str(r['Origen'])
+                    d = r['Destino'].decode('utf-8') if isinstance(r['Destino'], bytes) else str(r['Destino'])
+                    est = r['Estado'].decode('utf-8') if isinstance(r['Estado'], bytes) else str(r['Estado'])
+                    cost = float(r['Costo'])
+                    diag = r['Diagnostico'].decode('utf-8') if isinstance(r['Diagnostico'], bytes) else str(r['Diagnostico'])
+                    
+                    list_urgentes.append({
+                        'Guía': g,
+                        'Origen': o.upper(),
+                        'Destino': d.upper(),
+                        'Estado': DICCIONARIO_ESTADOS_LOCAL.get(est, est.replace('_', ' ').title()),
+                        'Costo Flete': f"${cost:,.0f} COP",
+                        'Diagnóstico Inferencia': diag
+                    })
+                df_urgentes_prolog = pd.DataFrame(list_urgentes)
+            except Exception as e:
+                st.error(f"Error consultando guías urgentes en Prolog: {e}")
+                df_urgentes_prolog = pd.DataFrame()
+                
+            if not df_urgentes_prolog.empty:
+                st.dataframe(df_urgentes_prolog, use_container_width=True, hide_index=True)
+            else:
+                st.success("🟢 No se registran guías con alertas críticas o urgencias de SLA.")
+
     elif opcion == "🔮 Predicciones IA":
         st.markdown("### 🔮 Inferencia y Predicciones de Inferencia IA")
         if df_historico.empty:
@@ -409,6 +528,15 @@ elif rol_usuario == "admin":
                 forecast = None
                 
             if forecast:
+                # Punto de Mayor Cuello de Botella (Alerta Principal)
+                max_hub = forecast.get('max_hub')
+                if max_hub:
+                    st.error(f"🚨 **NODO CRÍTICO DE CUELLO DE BOTELLA:** Hub `{max_hub['ciudad']}` con **{max_hub['tasa_novedades']:.1f}%** de novedades. {max_hub['recomendacion']}")
+                else:
+                    st.success("🟢 **RED OPERATIVA ESTABLE:** No se detectan cuellos de botella críticos activos en los nodos logísticos.")
+                
+                st.markdown("---")
+                
                 pred_col1, pred_col2 = st.columns(2)
                 with pred_col1:
                     with st.container(border=True):
