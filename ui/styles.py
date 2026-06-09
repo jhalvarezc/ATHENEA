@@ -12,19 +12,34 @@ COORDENADAS_CIUDADES = {
 }
 
 def aplicar_estilos_dark():
-    """Inyecta el CSS avanzado para la interfaz empresarial."""
-    st.markdown("""
-    <style>
-        .stApp { background-color: #0b0f19; }
-        [data-testid="stSidebar"] { background-color: #111827; border-right: 1px solid #1f2937; }
-        [data-testid="stMetric"] { background-color: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 18px; }
-        h1, h2, h3, p, label { color: #e6edf3 !important; font-family: 'Inter', sans-serif; }
-        .titulo-athenea { color: #e6edf3; font-weight: 800; margin-bottom: 5px; }
-    </style>
-    """, unsafe_allow_html=True)
+    """Inyecta el CSS avanzado para la interfaz empresarial desde ui/styles.css."""
+    import os
+    ruta_css = os.path.join(os.path.dirname(__file__), "styles.css")
+    try:
+        if os.path.exists(ruta_css):
+            with open(ruta_css, "r", encoding="utf-8") as f:
+                css = f.read()
+            st.markdown(f"<style>{css}</style>", unsafe_allow_html=True)
+    except Exception:
+        pass
 
 def renderizar_encabezado():
     """Muestra el Header corporativo de ATHENEA."""
-    st.markdown("<h1 class='titulo-athenea'>🧠 ATHENEA - Centro de Inteligencia Logística</h1>", unsafe_allow_html=True)
-    st.markdown("<p style='color: #8b949e; margin-top:-10px;'>Auditoría de despachos y tránsito con geolocalización de rutas reales.</p>", unsafe_allow_html=True)
-    st.markdown("---")
+    st.markdown("""
+    <div style="padding: 1.5rem 0 1rem 0; margin-bottom: 1.5rem; border-bottom: 1px solid rgba(255, 255, 255, 0.06);">
+        <h1 style="font-size: 2.6rem !important; font-weight: 800 !important; margin: 0 !important; letter-spacing: -0.03em !important; background: linear-gradient(135deg, #38bdf8 0%, #3b82f6 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; display: flex; align-items: center; gap: 12px;">
+            <span style="-webkit-text-fill-color: initial;">🧠</span> ATHENEA
+        </h1>
+        <p style="color: #94a3b8; font-size: 1.1rem; margin-top: 0.4rem !important; margin-bottom: 0 !important; font-weight: 500;">
+            Centro de Inteligencia Logística &bull; Motor de Auditoría Inferencia
+        </p>
+    </div>
+    """, unsafe_allow_html=True)
+
+def normalizar_ciudad(nombre):
+    """Normaliza el nombre de la ciudad eliminando acentos/tildes y convirtiendo a mayúsculas."""
+    if not nombre:
+        return ""
+    import unicodedata
+    s = unicodedata.normalize('NFKD', str(nombre)).encode('ASCII', 'ignore').decode('utf-8')
+    return s.strip().upper()

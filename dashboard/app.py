@@ -13,6 +13,7 @@ import time
 # Imports de la nueva arquitectura modular
 from ingestion.excel_parser import parsear_excel
 from brain.prolog_driver import auditar_envio
+from ui.styles import aplicar_estilos_dark, renderizar_encabezado
 # Mapeo local de funciones CSV para el Dashboard (evitando modificar storage/csv_manager.py)
 def leer_historico():
     ruta = os.path.join("storage", "data", "envios.csv")
@@ -71,18 +72,6 @@ from dashboard.metrics_ui import renderizar_metricas
 from dashboard.map_ui import renderizar_mapa
 from ui.auth import requerir_autenticacion
 
-# Estilos visuales dark de la UI
-def aplicar_estilos_dark():
-    st.markdown("""
-    <style>
-        .stApp { background-color: #0b0f19; }
-        [data-testid="stSidebar"] { background-color: #111827; border-right: 1px solid #1f2937; }
-        [data-testid="stMetric"] { background-color: #161b22; border: 1px solid #30363d; border-radius: 12px; padding: 18px; }
-        h1, h2, h3, p, label { color: #e6edf3 !important; font-family: 'Inter', sans-serif; }
-        .titulo-athenea { color: #e6edf3; font-weight: 800; margin-bottom: 5px; }
-    </style>
-    """, unsafe_allow_html=True)
-
 st.set_page_config(
     page_title="ATHENEA Dashboard",
     page_icon="🧠",
@@ -90,16 +79,19 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 aplicar_estilos_dark()
+renderizar_encabezado()
 
 # --- SISTEMA DE LOGIN Y RBAC ---
 rol_usuario = requerir_autenticacion()
 
 # Botón de cierre de sesión en la barra lateral
 st.sidebar.markdown(f"**Rol actual:** `{st.session_state.get('rol')}`")
+st.sidebar.markdown('<div class="logout-btn-container">', unsafe_allow_html=True)
 if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True):
     st.session_state["usuario_autenticado"] = False
     st.session_state["rol"] = None
     st.rerun()
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 if rol_usuario == "basico":
@@ -144,6 +136,7 @@ if rol_usuario == "basico":
         
         col_confirm, col_deny = st.columns(2)
         with col_confirm:
+            st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
             if st.button("✅ Confirmar cargue", type="primary", use_container_width=True):
                 registros_editados = df_editado.to_dict(orient='records')
                 exitos = 0
@@ -166,14 +159,17 @@ if rol_usuario == "basico":
                 st.session_state['last_uploaded_file_key'] = None
                 time.sleep(2)
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
                 
         with col_deny:
+            st.markdown('<div class="deny-btn-container">', unsafe_allow_html=True)
             if st.button("❌ Denegar cargue", type="secondary", use_container_width=True):
                 st.session_state['excel_preliminar'] = None
                 st.session_state['last_uploaded_file_key'] = None
                 st.info("Cargue preliminar denegado.")
                 time.sleep(1.5)
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
 elif rol_usuario == "admin":
     # Menú lateral de navegación
@@ -193,6 +189,7 @@ elif rol_usuario == "admin":
         uploaded_file = st.file_uploader("Selecciona un archivo Excel", type=["xlsx", "xls"])
         
         if uploaded_file is not None:
+            st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
             if st.button("🚀 Ingestar y Auditar Excel", use_container_width=True):
                 try:
                     registros = parsear_excel(uploaded_file)
@@ -206,6 +203,7 @@ elif rol_usuario == "admin":
                     st.rerun()
                 except Exception as e:
                     st.error(f"Error al procesar el archivo Excel: {e}")
+            st.markdown('</div>', unsafe_allow_html=True)
     
         st.markdown("---")
         st.markdown("### 📥 Sala de Espera de Auditoría (Registros Pendientes)")
@@ -236,16 +234,18 @@ elif rol_usuario == "admin":
             cols_visual = [c for c in cols_visual if c not in columnas_ocultar]
             cols_mostrar = [c for c in cols_visual if c in df_visual.columns]
             
-            df_editado_visual = st.data_editor(
-                df_visual[cols_mostrar],
-                num_rows="dynamic",
-                use_container_width=True,
-                key="editor_OCR_Excel"
-            )
+            with st.container(border=True):
+                df_editado_visual = st.data_editor(
+                    df_visual[cols_mostrar],
+                    num_rows="dynamic",
+                    use_container_width=True,
+                    key="editor_OCR_Excel"
+                )
             
             col_app, col_dec = st.columns(2)
             
             with col_app:
+                st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
                 if st.button("✅ Aprobar e Inyectar al Dashboard", type="primary", use_container_width=True):
                     for idx, row in df_editado_visual.iterrows():
                         if idx in df_pendientes.index:
@@ -283,12 +283,15 @@ elif rol_usuario == "admin":
                     st.success("¡Base de datos histórica consolidada con éxito!")
                     time.sleep(2)
                     st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
     
             with col_dec:
+                st.markdown('<div class="deny-btn-container">', unsafe_allow_html=True)
                 if st.button("🗑️ Descartar Sala de Espera", type="secondary", use_container_width=True):
                     limpiar_pendientes()
                     st.info("Sala de espera vaciada sin afectar históricos.")
                     st.rerun()
+                st.markdown('</div>', unsafe_allow_html=True)
         else:
             st.info("No hay guías nuevas pendientes de aprobación.")
     

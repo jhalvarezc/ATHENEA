@@ -30,10 +30,34 @@ def renderizar_metricas(df_filtrado):
 
     st.markdown("---")
     
-    # 2. Gráficos
-    st.markdown("<p style='color: #8b949e; font-weight:bold; font-size:1.1rem;'>Volumen de Carga por Origen de Datos</p>", unsafe_allow_html=True)
-    fuente_col = 'fuente' if 'fuente' in df_filtrado.columns else ('fuente_datos' if 'fuente_datos' in df_filtrado.columns else None)
-    if fuente_col:
-        st.bar_chart(df_filtrado[fuente_col].value_counts(), color="#f28c0f")
-    else:
-        st.caption("No hay datos de procedencia para graficar.")
+    # 2. Gráficos (Cuadrícula Premium 2x2)
+    col_graf1, col_graf2 = st.columns(2)
+    with col_graf1:
+        with st.container(border=True):
+            try:
+                from ui.charts import renderizar_grafico_canal
+                renderizar_grafico_canal(df_filtrado)
+            except Exception as e:
+                st.error(f"Error cargando gráfica de procedencia: {e}")
+        
+        with st.container(border=True):
+            try:
+                from ui.charts import renderizar_grafico_costos
+                renderizar_grafico_costos(df_filtrado)
+            except Exception as e:
+                st.error(f"Error cargando gráfica de costos: {e}")
+
+    with col_graf2:
+        with st.container(border=True):
+            try:
+                from ui.charts import renderizar_grafico_estados
+                renderizar_grafico_estados(df_filtrado)
+            except Exception as e:
+                st.error(f"Error cargando gráfica de estados: {e}")
+        
+        with st.container(border=True):
+            try:
+                from ui.charts import renderizar_grafico_ia
+                renderizar_grafico_ia(df_filtrado)
+            except Exception as e:
+                st.error(f"Error cargando gráfica de auditoría IA: {e}")

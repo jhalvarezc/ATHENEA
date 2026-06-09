@@ -4,15 +4,7 @@ import pandas as pd
 import pydeck as pdk
 import requests
 
-COORDENADAS_CIUDADES = {
-    'BOGOTA': {'lat': 4.7110, 'lon': -74.0721},
-    'MEDELLIN': {'lat': 6.2442, 'lon': -75.5812},
-    'CALI': {'lat': 3.4516, 'lon': -76.5320},
-    'BARRANQUILLA': {'lat': 10.9685, 'lon': -74.7813},
-    'BUCARAMANGA': {'lat': 7.1254, 'lon': -73.1198},
-    'CARTAGENA': {'lat': 10.3910, 'lon': -75.4794},
-    'PEREIRA': {'lat': 4.8133, 'lon': -75.6961}
-}
+from ui.styles import COORDENADAS_CIUDADES, normalizar_ciudad
 
 @st.cache_data(show_spinner=False)
 def obtener_ruta_calle(lon_origen, lat_origen, lon_destino, lat_destino):
@@ -40,57 +32,61 @@ def renderizar_mapa(df_filtrado):
 
     list_guias = sorted([str(g) for g in df_filtrado['guia_id'].unique().tolist()])
     
-    if list_guias:
-        guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
-        fila_guia = df_filtrado[df_filtrado['guia_id'] == guia_seleccionada].iloc[0]
-        
-        ciudad_orig = str(fila_guia['origen']).split('/')[0].strip().upper()
-        ciudad_dest = str(fila_guia['destino']).split('/')[0].strip().upper()
-        
-        st.info(f"📍 **Detalle Actual:** {fila_guia['guia_id']} | **Origen:** {ciudad_orig} | **Destino:** {ciudad_dest} | **Flete:** ${fila_guia['costo_flete']:,} COP")
-        
-        # Obtener coordenadas de forma segura
-        orig_lat = COORDENADAS_CIUDADES.get(ciudad_orig, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
-        orig_lon = COORDENADAS_CIUDADES.get(ciudad_orig, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
-        dest_lat = COORDENADAS_CIUDADES.get(ciudad_dest, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
-        dest_lon = COORDENADAS_CIUDADES.get(ciudad_dest, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
-        
-        coordenadas_carretera = obtener_ruta_calle(orig_lon, orig_lat, dest_lon, dest_lat)
-        
-        if coordenadas_carretera:
-            # Color de la línea según estado de auditoría
-            estado_aud = str(fila_guia.get('estado_auditoria', 'riesgo_bajo')).lower()
-            if estado_aud == 'riesgo_alto':
-                color_linea = [239, 68, 68, 255] # Rojo
-            elif estado_aud == 'riesgo_medio':
-                color_linea = [242, 140, 15, 255] # Naranja
-            else:
-                color_linea = [88, 166, 255, 255] # Azul
+    with st.container(border=True):
+        if list_guias:
+            guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
+            fila_guia = df_filtrado[df_filtrado['guia_id'] == guia_seleccionada].iloc[0]
+            
+            ciudad_orig = str(fila_guia['origen']).split('/')[0].strip()
+            ciudad_dest = str(fila_guia['destino']).split('/')[0].strip()
+            
+            ciudad_orig_norm = normalizar_ciudad(ciudad_orig)
+            ciudad_dest_norm = normalizar_ciudad(ciudad_dest)
+            
+            st.info(f"📍 **Detalle Actual:** {fila_guia['guia_id']} | **Origen:** {str(fila_guia['origen']).upper()} | **Destino:** {str(fila_guia['destino']).upper()} | **Flete:** ${fila_guia['costo_flete']:,} COP")
+            
+            # Obtener coordenadas de forma segura
+            orig_lat = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
+            orig_lon = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
+            dest_lat = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
+            dest_lon = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
+            
+            coordenadas_carretera = obtener_ruta_calle(orig_lon, orig_lat, dest_lon, dest_lat)
+            
+            if coordenadas_carretera:
+                # Color de la línea según estado de auditoría
+                estado_aud = str(fila_guia.get('estado_auditoria', 'riesgo_bajo')).lower()
+                if estado_aud == 'riesgo_alto':
+                    color_linea = [239, 68, 68, 255] # Rojo
+                elif estado_aud == 'riesgo_medio':
+                    color_linea = [242, 140, 15, 255] # Naranja
+                else:
+                    color_linea = [88, 166, 255, 255] # Azul
+                    
+                df_ruta_mapa = pd.DataFrame([{'path': coordenadas_carretera, 'color': color_linea}])
                 
-            df_ruta_mapa = pd.DataFrame([{'path': coordenadas_carretera, 'color': color_linea}])
-            
-            capa_camino_carreteras = pdk.Layer(
-                "PathLayer", 
-                data=df_ruta_mapa, 
-                get_path="path", 
-                get_color="color", 
-                width_scale=20, 
-                width_min_pixels=4
-            )
-            
-            view_state = pdk.ViewState(
-                latitude=(orig_lat + dest_lat) / 2,
-                longitude=(orig_lon + dest_lon) / 2,
-                zoom=5.3,
-                pitch=20
-            )
-            
-            st.pydeck_chart(pdk.Deck(
-                map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json", 
-                initial_view_state=view_state, 
-                layers=[capa_camino_carreteras]
-            ))
+                capa_camino_carreteras = pdk.Layer(
+                    "PathLayer", 
+                    data=df_ruta_mapa, 
+                    get_path="path", 
+                    get_color="color", 
+                    width_scale=20, 
+                    width_min_pixels=4
+                )
+                
+                view_state = pdk.ViewState(
+                    latitude=(orig_lat + dest_lat) / 2,
+                    longitude=(orig_lon + dest_lon) / 2,
+                    zoom=5.3,
+                    pitch=20
+                )
+                
+                st.pydeck_chart(pdk.Deck(
+                    map_style="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json", 
+                    initial_view_state=view_state, 
+                    layers=[capa_camino_carreteras]
+                ))
+            else:
+                st.error("⚠️ No se pudo trazar la ruta terrestre.")
         else:
-            st.error("⚠️ No se pudo trazar la ruta terrestre.")
-    else:
-        st.warning("No existen registros válidos con las restricciones aplicadas.")
+            st.warning("No existen registros válidos con las restricciones aplicadas.")

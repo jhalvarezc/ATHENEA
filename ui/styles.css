@@ -1,0 +1,201 @@
+/* ui/styles.css - Estilos CSS corporativos para ATHENEA (Tema Oscuro & Glassmorphism) */
+
+/* Importar fuentes premium de Google */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap');
+
+/* Configuración global del tema oscuro */
+html, body, [class*="css"], .stApp {
+    font-family: 'Plus Jakarta Sans', 'Outfit', sans-serif !important;
+    background: radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%) !important;
+    color: #f1f5f9 !important;
+}
+
+/* Ocultar elementos de Streamlit por defecto */
+#MainMenu {visibility: hidden;}
+footer {visibility: hidden;}
+header {visibility: hidden;}
+
+/* Ajustar espaciado superior al ocultar cabecera */
+.block-container {
+    padding-top: 2rem !important;
+    padding-bottom: 2rem !important;
+}
+
+/* Estilo de la barra lateral (Sidebar) */
+[data-testid="stSidebar"] {
+    background-color: #0b0f19 !important;
+    border-right: 1px solid rgba(255, 255, 255, 0.05) !important;
+}
+[data-testid="stSidebar"] h1, [data-testid="stSidebar"] h2, [data-testid="stSidebar"] p {
+    color: #f1f5f9 !important;
+}
+
+/* Títulos, subtítulos y jerarquía */
+h1, h2, h3, h4, h5, h6 {
+    font-family: 'Outfit', sans-serif !important;
+    font-weight: 700 !important;
+    color: #ffffff !important;
+    letter-spacing: -0.02em !important;
+    margin-bottom: 0.8rem !important;
+}
+
+/* Estilo de Tarjetas KPI con Glassmorphism */
+[data-testid="stMetric"] {
+    background: rgba(30, 41, 59, 0.45) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px !important;
+    padding: 22px 24px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3) !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+[data-testid="stMetric"]:hover {
+    transform: translateY(-4px) !important;
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    box-shadow: 0 12px 40px rgba(59, 130, 246, 0.15) !important;
+}
+[data-testid="stMetricValue"] {
+    font-size: 2.2rem !important;
+    font-weight: 800 !important;
+    color: #ffffff !important;
+    font-family: 'Outfit', sans-serif !important;
+    background: linear-gradient(135deg, #ffffff 0%, #cbd5e1 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+[data-testid="stMetricLabel"] {
+    font-size: 0.95rem !important;
+    font-weight: 600 !important;
+    color: #94a3b8 !important;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Estilo de Contenedores de Tarjetas con Glassmorphism */
+div[data-testid="stVerticalBlockBorderWrapper"] {
+    background: rgba(30, 41, 59, 0.25) !important;
+    backdrop-filter: blur(12px) !important;
+    -webkit-backdrop-filter: blur(12px) !important;
+    border: 1px solid rgba(255, 255, 255, 0.06) !important;
+    border-radius: 16px !important;
+    padding: 24px !important;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2) !important;
+    margin-bottom: 1rem !important;
+    transition: border-color 0.3s ease !important;
+}
+div[data-testid="stVerticalBlockBorderWrapper"]:hover {
+    border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Inputs y Selectores corporativos */
+div[data-baseweb="select"] > div, div[data-baseweb="input"] > div, input, select {
+    background-color: rgba(15, 23, 42, 0.6) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px !important;
+    color: #f8fafc !important;
+    transition: all 0.2s ease !important;
+}
+div[data-baseweb="select"] > div:hover, div[data-baseweb="input"] > div:hover, input:hover {
+    border-color: rgba(59, 130, 246, 0.4) !important;
+    background-color: rgba(15, 23, 42, 0.8) !important;
+}
+div[data-baseweb="select"] > div:focus-within, div[data-baseweb="input"] > div:focus-within, input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2) !important;
+}
+
+/* Estilo de Contenedores de Botones de Confirmar/Denegar/Cerrar Sesión */
+.confirm-btn-container button {
+    background: linear-gradient(135deg, #10b981 0%, #059669 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 24px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 14px 0 rgba(16, 185, 129, 0.3) !important;
+}
+.confirm-btn-container button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px 0 rgba(16, 185, 129, 0.5) !important;
+    background: linear-gradient(135deg, #059669 0%, #047857 100%) !important;
+}
+.confirm-btn-container button:active {
+    transform: translateY(0) !important;
+}
+
+.deny-btn-container button {
+    background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 24px !important;
+    font-weight: 600 !important;
+    letter-spacing: 0.02em !important;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    box-shadow: 0 4px 14px 0 rgba(239, 68, 68, 0.3) !important;
+}
+.deny-btn-container button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px 0 rgba(239, 68, 68, 0.5) !important;
+    background: linear-gradient(135deg, #dc2626 0%, #b91c1c 100%) !important;
+}
+.deny-btn-container button:active {
+    transform: translateY(0) !important;
+}
+
+.logout-btn-container button {
+    background: rgba(255, 255, 255, 0.04) !important;
+    color: #94a3b8 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 10px !important;
+    transition: all 0.2s ease !important;
+}
+.logout-btn-container button:hover {
+    background: rgba(239, 68, 68, 0.08) !important;
+    border-color: rgba(239, 68, 68, 0.3) !important;
+    color: #f87171 !important;
+    box-shadow: 0 4px 12px rgba(239, 68, 68, 0.1) !important;
+}
+
+/* Botón de Formulario (Login/Ingresar) */
+div[data-testid="stFormSubmitButton"] button {
+    background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 100%) !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 10px !important;
+    padding: 10px 24px !important;
+    font-weight: 600 !important;
+    transition: all 0.3s ease !important;
+    box-shadow: 0 4px 14px 0 rgba(59, 130, 246, 0.3) !important;
+}
+div[data-testid="stFormSubmitButton"] button:hover {
+    transform: translateY(-2px) !important;
+    box-shadow: 0 6px 20px 0 rgba(59, 130, 246, 0.5) !important;
+    background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%) !important;
+}
+
+/* Divisores elegantes */
+hr {
+    border-color: rgba(255, 255, 255, 0.06) !important;
+    margin: 2rem 0 !important;
+}
+
+/* Scrollbar Personalizada */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: rgba(2, 6, 23, 0.5);
+}
+::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.2);
+}

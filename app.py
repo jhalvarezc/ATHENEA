@@ -6,7 +6,7 @@ import os
 import time
 
 # Importación segura de tus componentes modulares
-from ui.styles import aplicar_estilos_dark, renderizar_encabezado, COORDENADAS_CIUDADES
+from ui.styles import aplicar_estilos_dark, renderizar_encabezado, COORDENADAS_CIUDADES, normalizar_ciudad
 from drivers.osrm_driver import obtener_ruta_calle
 from brain.prolog_driver import consultar_regla
 from storage.csv_manager import obtener_datos_consolidados
@@ -29,10 +29,12 @@ rol_usuario = requerir_autenticacion()
 
 # Botón de cierre de sesión en la barra lateral
 st.sidebar.markdown(f"**Rol actual:** `{st.session_state.get('rol')}`")
+st.sidebar.markdown('<div class="logout-btn-container">', unsafe_allow_html=True)
 if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True):
     st.session_state["usuario_autenticado"] = False
     st.session_state["rol"] = None
     st.rerun()
+st.sidebar.markdown('</div>', unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
 # ==========================================
@@ -111,6 +113,7 @@ if rol_usuario == "basico":
         
         col_confirm, col_deny = st.columns(2)
         with col_confirm:
+            st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
             if st.button("✅ Confirmar cargue", type="primary", use_container_width=True):
                 from brain.prolog_driver import auditar_envio
                 registros_editados = df_editado.to_dict(orient='records')
@@ -152,14 +155,17 @@ if rol_usuario == "basico":
                 st.session_state['last_uploaded_file_key'] = None
                 time.sleep(2)
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
                 
         with col_deny:
+            st.markdown('<div class="deny-btn-container">', unsafe_allow_html=True)
             if st.button("❌ Denegar cargue", type="secondary", use_container_width=True):
                 st.session_state['excel_preliminar'] = None
                 st.session_state['last_uploaded_file_key'] = None
                 st.info("Cargue preliminar denegado.")
                 time.sleep(1.5)
                 st.rerun()
+            st.markdown('</div>', unsafe_allow_html=True)
 
 # ---------------------------------------------------------
 # VISTA 2: PERFIL ADMINISTRADOR
@@ -195,18 +201,39 @@ elif rol_usuario == "admin":
             
         datos_unificados['diagnostico_ia'] = datos_unificados['guia'].map(dict_diagnosticos).fillna('en_verificacion')
 
+        # Diccionarios de traducción amigable para filtros
+        DICCIONARIO_FUENTES = {
+            'Data_Lake_CSV': '📁 Histórico (CSV)',
+            'Cargue_Operador_Excel': '📥 Cargues Operador (Excel)'
+        }
+        
+        DICCIONARIO_ESTADOS = {
+            'en_bodega': '📦 En Bodega',
+            'en_transito': '🚛 En Tránsito',
+            'en_novedad': '⚠️ En Novedad',
+            'entregado': '✅ Entregado',
+            'preparacion': '📝 En Preparación',
+            'en_revision_doc': '🔍 En Revisión Doc'
+        }
+
         # 4. Panel Control de Operaciones (Sidebar)
         st.sidebar.markdown("<h2 style='font-size:1.2rem; color:#58a6ff;'>🔍 Controles de Operación</h2>", unsafe_allow_html=True)
         busqueda_guia = st.sidebar.text_input("Buscar código de guía / remisión:", "").strip()
         
         fuentes_disponibles = datos_unificados['fuente'].unique().tolist()
-        fuentes_sel = st.sidebar.multiselect("Filtrar por Origen de Datos:", fuentes_disponibles, default=fuentes_disponibles)
+        fuentes_map = {DICCIONARIO_FUENTES.get(f, f): f for f in fuentes_disponibles if pd.notna(f)}
+        fuentes_sel_amigables = st.sidebar.multiselect("Filtrar por Origen de Datos:", options=list(fuentes_map.keys()), default=list(fuentes_map.keys()))
+        fuentes_sel = [fuentes_map[f] for f in fuentes_sel_amigables]
         
         estados_disponibles = datos_unificados['estado'].unique().tolist() if 'estado' in datos_unificados.columns else ['en_ruta']
-        estados_sel = st.sidebar.multiselect("Filtrar por Estado Lógico:", estados_disponibles, default=estados_disponibles)
+        estados_map = {DICCIONARIO_ESTADOS.get(e, str(e).replace('_', ' ').title()): e for e in estados_disponibles if pd.notna(e)}
+        estados_sel_amigables = st.sidebar.multiselect("Filtrar por Estado Lógico:", options=list(estados_map.keys()), default=list(estados_map.keys()))
+        estados_sel = [estados_map[e] for e in estados_sel_amigables]
         
         ciudades_disponibles = datos_unificados['destino'].unique().tolist() if 'destino' in datos_unificados.columns else []
-        ciudades_sel = st.sidebar.multiselect("Filtrar por Destino:", ciudades_disponibles, default=ciudades_disponibles)
+        ciudades_map = {str(c).split('/')[0].strip().title(): c for c in ciudades_disponibles if pd.notna(c)}
+        ciudades_sel_amigables = st.sidebar.multiselect("Filtrar por Destino:", options=list(ciudades_map.keys()), default=list(ciudades_map.keys()))
+        ciudades_sel = [ciudades_map[c] for c in ciudades_sel_amigables]
         
         if rol_usuario != 'basico':
             max_flete = int(datos_unificados['costo_flete'].max()) if 'costo_flete' in datos_unificados.columns else 100000
@@ -241,11 +268,9 @@ elif rol_usuario == "admin":
 
         # 6. Monitoreo Geográfico de Redes y Canales (Mapa + Gráfico)
         st.markdown("<h2 style='font-size:1.5rem;'>🗺️ Monitoreo de Red Geográfica</h2>", unsafe_allow_html=True)
-        mapa_col, graf_col = st.columns([5, 3])
-
         list_guias = sorted([str(g) for g in datos_filtrados['guia'].unique().tolist()])
 
-        with mapa_col:
+        with st.container(border=True):
             if list_guias:
                 guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
                 fila_guia = datos_filtrados[datos_filtrados['guia'] == guia_seleccionada].iloc[0]
@@ -255,19 +280,22 @@ elif rol_usuario == "admin":
                 
                 # --- 🛡️ BLINDAJE GEOGRÁFICO CONTRA COORDENADAS NaN ---
                 try:
-                    ciudad_orig = str(fila_guia['origen']).split('/')[0].strip().upper()
-                    ciudad_dest = str(fila_guia['destino']).split('/')[0].strip().upper()
+                    ciudad_orig = str(fila_guia['origen']).split('/')[0].strip()
+                    ciudad_dest = str(fila_guia['destino']).split('/')[0].strip()
+                    
+                    ciudad_orig_norm = normalizar_ciudad(ciudad_orig)
+                    ciudad_dest_norm = normalizar_ciudad(ciudad_dest)
 
                     if 'origen_latitude' not in fila_guia or pd.isna(fila_guia['origen_latitude']) or float(fila_guia['origen_latitude']) == 0:
-                        orig_lat = COORDENADAS_CIUDADES.get(ciudad_orig, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
-                        orig_lon = COORDENADAS_CIUDADES.get(ciudad_orig, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
+                        orig_lat = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
+                        orig_lon = COORDENADAS_CIUDADES.get(ciudad_orig_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
                     else:
                         orig_lat = float(fila_guia['origen_latitude'])
                         orig_lon = float(fila_guia['origen_longitude'])
 
                     if 'destino_latitude' not in fila_guia or pd.isna(fila_guia['destino_latitude']) or float(fila_guia['destino_latitude']) == 0:
-                        dest_lat = COORDENADAS_CIUDADES.get(ciudad_dest, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
-                        dest_lon = COORDENADAS_CIUDADES.get(ciudad_dest, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
+                        dest_lat = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lat"]
+                        dest_lon = COORDENADAS_CIUDADES.get(ciudad_dest_norm, COORDENADAS_CIUDADES["BOGOTA"])["lon"]
                     else:
                         dest_lat = float(fila_guia['destino_latitude'])
                         dest_lon = float(fila_guia['destino_longitude'])
@@ -308,12 +336,39 @@ elif rol_usuario == "admin":
             else:
                 st.warning("No existen registros válidos con las restricciones aplicadas en los controles.")
 
-        with graf_col:
-            st.markdown("<p style='color: #8b949e; font-weight:bold;'>Volumen de Carga por Canal de Captura</p>", unsafe_allow_html=True)
-            if not datos_filtrados.empty:
-                st.bar_chart(datos_filtrados['fuente'].value_counts(), color="#f28c0f")
-            else:
-                st.caption("No hay datos para graficar con los filtros actuales.")
+        st.markdown("---")
+        st.markdown("<h2 style='font-size:1.5rem;'>📊 Métricas y Análisis de la Operación</h2>", unsafe_allow_html=True)
+        
+        col_graf1, col_graf2 = st.columns(2)
+        with col_graf1:
+            with st.container(border=True):
+                try:
+                    from ui.charts import renderizar_grafico_canal
+                    renderizar_grafico_canal(datos_filtrados)
+                except Exception as e:
+                    st.error(f"Error cargando gráfica de procedencia: {e}")
+            
+            with st.container(border=True):
+                try:
+                    from ui.charts import renderizar_grafico_costos
+                    renderizar_grafico_costos(datos_filtrados)
+                except Exception as e:
+                    st.error(f"Error cargando gráfica de costos: {e}")
+
+        with col_graf2:
+            with st.container(border=True):
+                try:
+                    from ui.charts import renderizar_grafico_estados
+                    renderizar_grafico_estados(datos_filtrados)
+                except Exception as e:
+                    st.error(f"Error cargando gráfica de estados: {e}")
+            
+            with st.container(border=True):
+                try:
+                    from ui.charts import renderizar_grafico_ia
+                    renderizar_grafico_ia(datos_filtrados)
+                except Exception as e:
+                    st.error(f"Error cargando gráfica de auditoría IA: {e}")
 
         # 7. Tablas de Control de Auditorías Específicas
         st.markdown("---")
@@ -328,28 +383,31 @@ elif rol_usuario == "admin":
         
         f2_A, f2_B = st.columns(2)
         with f2_A:
-            st.markdown("<h3 style='font-size:1.1rem; color:#ef4444;'>🚨 Auditoría de Riesgos y Alertas Críticas</h3>", unsafe_allow_html=True)
-            df_alertas = datos_filtrados[datos_filtrados['diagnostico_ia'] == 'critico_financiero']
-            if not df_alertas.empty:
-                st.dataframe(df_alertas[columnas_validas], width="stretch")
-            else:
-                st.info("No se detectaron alertas críticas con los filtros actuales.")
+            with st.container(border=True):
+                st.markdown("<h3 style='font-size:1.1rem; color:#ef4444;'>🚨 Auditoría de Riesgos y Alertas Críticas</h3>", unsafe_allow_html=True)
+                df_alertas = datos_filtrados[datos_filtrados['diagnostico_ia'] == 'critico_financiero']
+                if not df_alertas.empty:
+                    st.dataframe(df_alertas[columnas_validas], width="stretch")
+                else:
+                    st.info("No se detectaron alertas críticas con los filtros actuales.")
             
         with f2_B:
-            st.markdown("<h3 style='font-size:1.1rem; color:#f28c0f;'>💰 Tarifas Fuera de Estándar (Prolog)</h3>", unsafe_allow_html=True)
-            if 'alerta_costo' in datos_filtrados.columns:
-                df_caros = datos_filtrados[datos_filtrados['alerta_costo'] == True]
-                if not df_caros.empty:
-                    st.dataframe(df_caros[columnas_validas], width="stretch")
+            with st.container(border=True):
+                st.markdown("<h3 style='font-size:1.1rem; color:#f28c0f;'>💰 Tarifas Fuera de Estándar (Prolog)</h3>", unsafe_allow_html=True)
+                if 'alerta_costo' in datos_filtrados.columns:
+                    df_caros = datos_filtrados[datos_filtrados['alerta_costo'] == True]
+                    if not df_caros.empty:
+                        st.dataframe(df_caros[columnas_validas], width="stretch")
+                    else:
+                        st.info("No hay fletes con sobreprecio detectados.")
                 else:
-                    st.info("No hay fletes con sobreprecio detectados.")
-            else:
-                st.caption("Esperando inicialización de métricas de costo.")
-
+                    st.caption("Esperando inicialización de métricas de costo.")
+ 
         # 8. Repositorio de Trazabilidad Total Completo
         st.markdown("---")
         st.markdown("<h2 style='font-size:1.4rem;'>📋 Repositorio Central de Trazabilidad Logística</h2>", unsafe_allow_html=True)
-        st.dataframe(datos_filtrados[columnas_validas], width="stretch")
+        with st.container(border=True):
+            st.dataframe(datos_filtrados[columnas_validas], width="stretch")
 
     except Exception as e:
         st.error(f"Error general en la orquestación modular: {e}")
