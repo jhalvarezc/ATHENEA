@@ -507,3 +507,76 @@ def renderizar_tablero_analitico(df, rol_usuario):
             with st.container(border=True):
                 fig_bar_orig = plot_bar_cantidad_origen(df_clean)
                 st.plotly_chart(fig_bar_orig, use_container_width=True, config={'displayModeBar': False})
+
+def renderizar_graficos_urgentes(df_urgentes):
+    """
+    Dibuja gráficos específicos para la sección de Guías Urgentes:
+    1. Donut Chart de Diagnósticos de Inferencia.
+    2. Bar Chart de cantidad de urgencias por Ciudad de Destino.
+    """
+    if df_urgentes is None or df_urgentes.empty:
+        return
+        
+    st.markdown("<h3 style='font-size:1.2rem; margin-top:20px; color:#ef4444;'>📈 Análisis Estadístico de Urgencias</h3>", unsafe_allow_html=True)
+    
+    col1, col2 = st.columns(2)
+    
+    with col1:
+        with st.container(border=True):
+            counts_diag = df_urgentes['Diagnóstico Inferencia'].value_counts().reset_index()
+            counts_diag.columns = ['Diagnostico', 'Cantidad']
+            
+            fig = px.pie(
+                counts_diag,
+                names='Diagnostico',
+                values='Cantidad',
+                hole=0.5,
+                color_discrete_sequence=['#ef4444', '#f59e0b', '#ec4899', '#8b5cf6', '#3b82f6']
+            )
+            fig.update_traces(
+                textinfo='percent+value',
+                textposition='inside',
+                marker=dict(line=dict(color='rgba(2,6,23,0.5)', width=2))
+            )
+            fig.update_layout(
+                title=dict(text="Distribución de Diagnósticos de Alerta", font=dict(size=12, color="#ffffff")),
+                margin=dict(l=10, r=10, t=40, b=10),
+                height=220,
+                showlegend=True,
+                legend=dict(
+                    orientation="h",
+                    y=-0.2,
+                    x=0.5,
+                    xanchor="center",
+                    font=dict(size=9)
+                )
+            )
+            aplicar_estilos_plotly(fig)
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})
+            
+    with col2:
+        with st.container(border=True):
+            counts_dest = df_urgentes['Destino'].value_counts().reset_index()
+            counts_dest.columns = ['Destino', 'Cantidad']
+            counts_dest = counts_dest.sort_values(by='Cantidad', ascending=False)
+            
+            fig = px.bar(
+                counts_dest,
+                x='Destino',
+                y='Cantidad',
+                text_auto=True,
+                color='Cantidad',
+                color_continuous_scale=['#f43f5e', '#e11d48', '#be123c'] # Degradado de rojo crítico
+            )
+            fig.update_layout(
+                title=dict(text="Alertas Críticas por Ciudad de Destino", font=dict(size=12, color="#ffffff")),
+                margin=dict(l=10, r=10, t=40, b=10),
+                height=220,
+                coloraxis_showscale=False
+            )
+            aplicar_estilos_plotly(fig)
+            fig.update_traces(
+                marker=dict(line=dict(color='rgba(255,255,255,0.05)', width=1)),
+                width=0.45
+            )
+            st.plotly_chart(fig, use_container_width=True, config={'displayModeBar': False})

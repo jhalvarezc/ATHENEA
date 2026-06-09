@@ -132,6 +132,18 @@ if rol_usuario == "basico":
                         if f not in reg:
                             reg[f] = original_reg.get(f, 1 if 'dia' in f or 'mes' in f else 2026)
                     
+                    # Normalizar nombres de ciudad para evitar tildes y duplicados
+                    import unicodedata
+                    def limpiar_txt(val):
+                        if not val or pd.isna(val):
+                            return ""
+                        return unicodedata.normalize('NFKD', str(val)).encode('ASCII', 'ignore').decode('utf-8').strip().lower()
+                    
+                    if 'origen' in reg:
+                        reg['origen'] = limpiar_txt(reg['origen'])
+                    if 'destino' in reg:
+                        reg['destino'] = limpiar_txt(reg['destino'])
+
                     # Auditar con Prolog
                     reg['estado_auditoria'] = auditar_envio(reg)
                     
@@ -421,7 +433,16 @@ elif rol_usuario == "admin":
                 df_urgentes_prolog = pd.DataFrame()
                 
             if not df_urgentes_prolog.empty:
-                # Formatear el costo de flete antes de mostrar
+                # 1. Renderizar Gráficos de Urgencias
+                try:
+                    from ui.charts import renderizar_graficos_urgentes
+                    renderizar_graficos_urgentes(df_urgentes_prolog)
+                except Exception as e:
+                    st.error(f"Error cargando gráficos de urgencias: {e}")
+                
+                st.markdown("---")
+                
+                # 2. Formatear el costo de flete antes de mostrar y renderizar tabla
                 df_urg_visual = df_urgentes_prolog.copy()
                 df_urg_visual['Costo Flete'] = df_urg_visual['Costo Flete'].map(lambda x: f"${x:,.0f} COP")
                 st.dataframe(df_urg_visual, use_container_width=True, hide_index=True)

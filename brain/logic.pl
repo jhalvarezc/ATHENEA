@@ -194,7 +194,7 @@ prediccion_sla(TasaFallo, Categoria, Recomendacion) :-
         Recomendacion = 'Excelente: Las entregas criticas se encuentran dentro del rango operativo aceptable.'
     ).
 
-% Obtiene el hub con la tasa más alta de novedades (cuello de botella principal)
+% Obtiene el hub con la tasa mas alta de novedades (cuello de botella principal)
 mayor_cuello_botella(Ciudad, TasaMax, Recomendacion) :-
     estadisticas_hub(Ciudad, Novedades, Total),
     Total > 0,
@@ -223,3 +223,24 @@ guia_urgente(Guia, Origen, Destino, Estado, Costo, Diagnostico) :-
         retraso_por_transporte(Guia, fecha(7, 6, 2026)) -> Diagnostico = 'Retraso de Ruta' ;
         entrega_urgente(Guia) -> Diagnostico = 'Margen de SLA Critico'
     ).    
+
+% ---------------------------------------------------------
+% 9. VERIFICACIÓN DE CONSISTENCIA Y AUDITORÍA DE CONFIABILIDAD
+% ---------------------------------------------------------
+contar_guias_prolog(Total) :-
+    findall(G, estado_envio(G, _), Lista),
+    length(Lista, Total).
+
+sumar_costos_prolog(Total) :-
+    findall(C, costo_flete(_, C), Lista),
+    sum_list(Lista, Total).
+
+consistencia_global(TotalDf, CostoDf, Estado) :-
+    contar_guias_prolog(TotalProlog),
+    sumar_costos_prolog(CostoProlog),
+    (
+        (TotalProlog =:= TotalDf, CostoProlog =:= CostoDf) ->
+        Estado = 'concordancia_perfecta'
+    ;
+        Estado = 'discrepancia_detectada'
+    ).

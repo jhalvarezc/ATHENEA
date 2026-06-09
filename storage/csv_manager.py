@@ -74,13 +74,26 @@ def sincronizar_datos():
 
     df_unificado = pd.concat(dfs, ignore_index=True)
 
+    # Función local para normalizar nombres de ciudades quitando tildes y espacios
+    def limpiar_ciudad_texto(x):
+        if not x or pd.isna(x):
+            return ""
+        import unicodedata
+        s = unicodedata.normalize('NFKD', str(x)).encode('ASCII', 'ignore').decode('utf-8')
+        return s.strip().lower()
+
+    if 'origen' in df_unificado.columns:
+        df_unificado['origen'] = df_unificado['origen'].astype(str).apply(limpiar_ciudad_texto)
+    if 'destino' in df_unificado.columns:
+        df_unificado['destino'] = df_unificado['destino'].astype(str).apply(limpiar_ciudad_texto)
+
     # 4. Mapeo e inyección en el Motor de Inferencia Prolog
     for _, row in df_unificado.iterrows():
         g = str(row['guia']).strip()
         e = str(row['estado']).strip()
         c = safe_to_int(row.get('costo_flete'), 0)
-        o = str(row['origen']).strip().lower()
-        d = str(row['destino']).strip().lower()
+        o = str(row['origen']).strip()
+        d = str(row['destino']).strip()
         
         d_dia = safe_to_int(row.get('despacho_dia'), 1)
         d_mes = safe_to_int(row.get('despacho_mes'), 1)

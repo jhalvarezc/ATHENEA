@@ -15,11 +15,26 @@ from ingestion.excel_parser import parsear_excel
 from brain.prolog_driver import auditar_envio
 from ui.styles import aplicar_estilos_dark, renderizar_encabezado
 # Mapeo local de funciones CSV para el Dashboard (evitando modificar storage/csv_manager.py)
+def _normalizar_columnas_ciudad(df):
+    if df is None or df.empty:
+        return df
+    import unicodedata
+    def limpiar(x):
+        if not x or pd.isna(x):
+            return ""
+        return unicodedata.normalize('NFKD', str(x)).encode('ASCII', 'ignore').decode('utf-8').strip().lower()
+    if 'origen' in df.columns:
+        df['origen'] = df['origen'].astype(str).apply(limpiar)
+    if 'destino' in df.columns:
+        df['destino'] = df['destino'].astype(str).apply(limpiar)
+    return df
+
 def leer_historico():
     ruta = os.path.join("storage", "data", "envios.csv")
     if os.path.exists(ruta):
         try:
-            return pd.read_csv(ruta)
+            df = pd.read_csv(ruta)
+            return _normalizar_columnas_ciudad(df)
         except Exception:
             return pd.DataFrame()
     return pd.DataFrame()
@@ -28,7 +43,8 @@ def leer_pendientes():
     ruta = os.path.join("storage", "data", "pendientes_aprobacion.csv")
     if os.path.exists(ruta):
         try:
-            return pd.read_csv(ruta)
+            df = pd.read_csv(ruta)
+            return _normalizar_columnas_ciudad(df)
         except Exception:
             return pd.DataFrame()
     return pd.DataFrame()
@@ -44,6 +60,7 @@ def guardar_pendiente_aprobacion(datos):
             df_final = df_nuevo
     else:
         df_final = df_nuevo
+    df_final = _normalizar_columnas_ciudad(df_final)
     os.makedirs(os.path.dirname(ruta), exist_ok=True)
     df_final.to_csv(ruta, index=False)
 
@@ -58,6 +75,7 @@ def guardar_aprobados(df_aprobados_list):
             df_final = df_nuevo
     else:
         df_final = df_nuevo
+    df_final = _normalizar_columnas_ciudad(df_final)
     os.makedirs(os.path.dirname(ruta_oficial), exist_ok=True)
     df_final.to_csv(ruta_oficial, index=False)
 
@@ -150,6 +168,17 @@ if rol_usuario == "basico":
                         if f not in reg:
                             reg[f] = original_reg.get(f, 1 if 'dia' in f or 'mes' in f else 2026)
                     
+                    # Normalizar nombres de ciudad para evitar tildes y duplicados
+                    import unicodedata
+                    def limpiar_txt(val):
+                        if not val or pd.isna(val):
+                            return ""
+                        return unicodedata.normalize('NFKD', str(val)).encode('ASCII', 'ignore').decode('utf-8').strip().lower()
+                    if 'origen' in reg:
+                        reg['origen'] = limpiar_txt(reg['origen'])
+                    if 'destino' in reg:
+                        reg['destino'] = limpiar_txt(reg['destino'])
+
                     reg['estado_auditoria'] = auditar_envio(reg)
                     guardar_pendiente_aprobacion(reg)
                     exitos += 1
@@ -478,6 +507,16 @@ elif rol_usuario == "admin":
                 df_urgentes_prolog = pd.DataFrame()
                 
             if not df_urgentes_prolog.empty:
+                # 1. Renderizar Gráficos de Urgencias
+                try:
+                    from ui.charts import renderizar_graficos_urgentes
+                    renderizar_graficos_urgentes(df_urgentes_prolog)
+                except Exception as e:
+                    st.error(f"Error cargando gráficos de urgencias: {e}")
+                
+                st.markdown("---")
+                
+                # 2. Renderizar tabla
                 st.dataframe(df_urgentes_prolog, use_container_width=True, hide_index=True)
             else:
                 st.success("🟢 No se registran guías con alertas críticas o urgencias de SLA.")
