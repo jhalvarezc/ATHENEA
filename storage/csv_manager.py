@@ -2,6 +2,7 @@
 import pandas as pd
 import os
 from brain.prolog_driver import consultar_regla, prolog_instance, obtener_alertas_financieras, obtener_entregas_criticas
+from ui.styles import normalizar_ciudad
 
 def safe_to_int(val, default=0):
     """Convierte de forma segura cualquier valor a entero, manejando NaNs, Nones y formatos de punto flotante en texto."""
@@ -76,16 +77,15 @@ def sincronizar_datos():
 
     # Función local para normalizar nombres de ciudades quitando tildes y espacios
     def limpiar_ciudad_texto(x):
-        if not x or pd.isna(x):
+        if pd.isna(x) or str(x).lower() == 'nan':
             return ""
-        import unicodedata
-        s = unicodedata.normalize('NFKD', str(x)).encode('ASCII', 'ignore').decode('utf-8')
-        return s.strip().lower()
+        # Usar la función compartida, pero retornar en minúsculas para mantener consistencia aquí
+        return normalizar_ciudad(x).lower()
 
     if 'origen' in df_unificado.columns:
-        df_unificado['origen'] = df_unificado['origen'].astype(str).apply(limpiar_ciudad_texto)
+        df_unificado['origen'] = df_unificado['origen'].apply(limpiar_ciudad_texto)
     if 'destino' in df_unificado.columns:
-        df_unificado['destino'] = df_unificado['destino'].astype(str).apply(limpiar_ciudad_texto)
+        df_unificado['destino'] = df_unificado['destino'].apply(limpiar_ciudad_texto)
 
     # 4. Mapeo e inyección en el Motor de Inferencia Prolog
     for _, row in df_unificado.iterrows():
