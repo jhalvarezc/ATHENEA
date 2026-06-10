@@ -1,6 +1,5 @@
 # brain/forecasting.py - Motor de Predicciones y Proyecciones Analíticas (Prolog + Python)
 import pandas as pd
-import numpy as np
 import streamlit as st
 from brain.prolog_driver import prolog_instance, prolog_lock, consultar_regla
 from ui.styles import normalizar_ciudad
