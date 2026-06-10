@@ -1,178 +1,211 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="es" class="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Mejorador Automático de Prompts ✨</title>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <title>Optimizador de Prompts ✨ Premium</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Public+Sans:wght@300;400;600;700;900&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        primary: "#6366f1",
+                        surface: "#0f172a",
+                        "on-surface": "#f8fafc",
+                        "on-surface-variant": "#94a3b8",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.5rem",
+                        "lg": "1rem",
+                        "xl": "1.5rem",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        headline: ["Public Sans", "sans-serif"],
+                        display: ["Public Sans", "sans-serif"],
+                        body: ["Inter", "sans-serif"],
+                        label: ["Public Sans", "sans-serif"]
+                    }
+                },
+            },
+        }
+    </script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap');
-
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #f0f4f9;
         }
-
+        .glass {
+            background: rgba(255, 255, 255, 0.02);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .glow-border:focus-within {
+            box-shadow: 0 0 24px -5px rgba(99, 102, 241, 0.25);
+            border-color: rgba(99, 102, 241, 0.4);
+        }
         .container-main {
-            max-width: 900px;
+            max-width: 1100px;
         }
-
-        .input-group label {
-            display: block;
-            margin-bottom: 4px;
-            font-weight: 700;
-        }
-
-        .input-group textarea {
-            border: 1px solid #cbd5e1;
-            transition: all 0.2s;
-        }
-
-        .input-group textarea:focus {
-            border-color: #4c51bf;
-            box-shadow: 0 0 0 3px rgba(76, 81, 191, 0.2);
-            outline: none;
-        }
-
-        #prompt-final {
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            min-height: 120px;
-        }
-
         .fade-in {
-            animation: fadeIn 0.5s ease-in;
+            animation: fadeIn 0.4s ease-out;
         }
-
         @keyframes fadeIn {
             from {
                 opacity: 0;
-                transform: translateY(10px);
+                transform: translateY(12px);
             }
-
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
-
-        /* Custom Scrollbar for history */
+        /* Custom Scrollbar */
         .custom-scroll::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
-
         .custom-scroll::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 10px;
+            background: transparent;
         }
-
         .custom-scroll::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
+            background: rgba(99, 102, 241, 0.2);
             border-radius: 10px;
         }
-
         .custom-scroll::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
+            background: rgba(99, 102, 241, 0.4);
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-float {
+            animation: float 6s ease-in-out infinite;
         }
     </style>
 </head>
 
-<body class="p-4 md:p-8">
+<body class="bg-slate-950 text-slate-100 min-h-screen selection:bg-indigo-500/30 p-4 md:p-8 relative overflow-x-hidden">
 
-    <div class="container-main mx-auto">
+    <!-- Background Decorative Glows -->
+    <div class="fixed inset-0 overflow-hidden pointer-events-none -z-10">
+        <div class="absolute -top-24 -left-24 w-96 h-96 bg-indigo-600/10 rounded-full blur-[120px] animate-pulse"></div>
+        <div class="absolute top-1/2 -right-24 w-80 h-80 bg-violet-600/10 rounded-full blur-[100px]"></div>
+    </div>
+
+    <div class="container-main mx-auto mt-4">
         <!-- Grid Layout: Main App + History Sidebar -->
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             <!-- MAIN APP AREA (2/3 width on large screens) -->
-            <div class="lg:col-span-2 bg-white p-6 md:p-10 rounded-2xl shadow-xl border border-slate-100">
-                <header class="text-center mb-8">
-                    <h1 class="text-4xl font-extrabold text-indigo-700 mb-2">✨ Optimizador de Prompts</h1>
-                    <p class="text-gray-600">Diseña instrucciones profesionales. El sistema mejorará tu prompt sin
-                        responder a la consulta.</p>
-                </header>
+            <div class="lg:col-span-2 glass p-6 md:p-10 rounded-2xl shadow-2xl relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <header class="text-center mb-8">
+                        <div class="flex items-center justify-center gap-2.5 mb-2">
+                            <span class="material-symbols-outlined text-indigo-400 text-3xl animate-pulse">auto_awesome</span>
+                            <h1 class="text-3xl md:text-4xl font-black tracking-tight bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-headline">Optimizador de Prompts</h1>
+                        </div>
+                        <p class="text-slate-400 text-sm max-w-lg mx-auto">Diseña instrucciones de élite. El sistema estructurará tu prompt original para obtener resultados excepcionales.</p>
+                    </header>
 
-                <div class="space-y-6">
-                    <!-- Input de Instrucción del Sistema (Azul) -->
-                    <div class="input-group p-5 bg-blue-50 rounded-xl shadow-sm border border-blue-100">
-                        <label for="system_prompt" class="text-blue-700 text-lg">⚙️ Reglas de Optimización
-                            (Opcional)</label>
-                        <p class="text-xs text-blue-600 mb-3">Añade directrices específicas sobre cómo quieres que se
-                            transforme tu prompt.</p>
-                        <textarea id="system_prompt" rows="2" class="w-full p-4 rounded-lg text-sm"
-                            placeholder="Ej: Haz que el prompt final sea muy técnico y use formato Markdown..."></textarea>
-                    </div>
-
-                    <!-- Google Search Toggle (Amarillo) -->
-                    <div
-                        class="input-group p-4 bg-yellow-50 rounded-xl shadow-sm border border-yellow-100 flex items-center justify-between">
-                        <div class="flex items-center space-x-3">
-                            <span class="text-2xl">🌐</span>
-                            <div>
-                                <label class="text-yellow-800 text-md font-bold mb-0 leading-none">Contexto de
-                                    Búsqueda</label>
-                                <p class="text-xs text-yellow-700">Usa datos reales de la web para enriquecer el prompt.
-                                </p>
+                    <div class="space-y-6">
+                        <!-- Input de Instrucción del Sistema -->
+                        <div class="glass p-5 rounded-2xl glow-border transition-all">
+                            <label for="system_prompt" class="flex items-center gap-2 text-indigo-300 text-sm font-bold mb-2">
+                                <span class="material-symbols-outlined text-lg">tune</span>
+                                Directrices del Sistema (Opcional)
+                            </label>
+                            <p class="text-xs text-slate-455 mb-3 text-slate-400">Especifica el tono, formato o restricciones para la optimización.</p>
+                            <textarea id="system_prompt" rows="2" class="w-full bg-white/5 border border-white/10 rounded-xl p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/40 text-slate-200 placeholder-slate-500 transition-all font-body"
+                                placeholder="Ej: Haz que sea técnico, use formato Markdown o adopte cierto rol..."></textarea>
+                            
+                            <!-- Presets -->
+                            <div class="flex flex-wrap gap-2 mt-3">
+                                <button onclick="aplicarPreset('Haz que el prompt final sea muy técnico, profesional y detallado.')" class="text-[11px] font-semibold bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1">
+                                    ⚙️ Técnico
+                                </button>
+                                <button onclick="aplicarPreset('Estructura el prompt para maximizar la creatividad, originalidad y metáforas.')" class="text-[11px] font-semibold bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1">
+                                    🎨 Creativo
+                                </button>
+                                <button onclick="aplicarPreset('Optimiza para obtener respuestas directas y concisas, sin introducciones.')" class="text-[11px] font-semibold bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1">
+                                    ⚡ Conciso
+                                </button>
+                                <button onclick="aplicarPreset('Solicita la respuesta estructurada detalladamente usando formato Markdown.')" class="text-[11px] font-semibold bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 hover:text-white px-2.5 py-1.5 rounded-lg transition-all flex items-center gap-1">
+                                    📝 Markdown
+                                </button>
                             </div>
                         </div>
-                        <label class="relative inline-flex items-center cursor-pointer">
-                            <input type="checkbox" id="search_grounding_toggle" checked class="sr-only peer">
-                            <div
-                                class="w-11 h-6 bg-gray-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-yellow-500">
-                            </div>
-                        </label>
-                    </div>
 
-                    <!-- Input de Prompt Básico (Púrpura) -->
-                    <div class="input-group p-5 bg-purple-50 rounded-xl shadow-sm border border-purple-100">
-                        <label for="prompt_basico" class="text-purple-700 text-xl font-bold">🎯 Tu Idea o Prompt
-                            Básico</label>
-                        <p class="text-sm text-purple-600 mb-3">Escribe lo que quieres pedirle a la IA para que sea
-                            optimizado.</p>
-                        <textarea id="prompt_basico" rows="4" class="w-full p-4 rounded-lg text-lg"
-                            placeholder="Escribe aquí tu consulta inicial...">Dame un resumen del último informe de ganancias de Google.</textarea>
+                        <!-- Google Search Toggle -->
+                        <div class="glass p-4 rounded-2xl flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                                    <span class="material-symbols-outlined text-indigo-400">language</span>
+                                </div>
+                                <div>
+                                    <label class="text-sm font-bold text-slate-200">Contexto de Búsqueda (Google Search)</label>
+                                    <p class="text-xs text-slate-400">Usa datos en tiempo real de la web para enriquecer la base.</p>
+                                </div>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" id="search_grounding_toggle" checked class="sr-only peer">
+                                <div class="w-11 h-6 bg-white/10 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
+                        <!-- Input de Prompt Básico -->
+                        <div class="glass p-5 rounded-2xl glow-border transition-all">
+                            <label for="prompt_basico" class="flex items-center gap-2 text-indigo-300 text-base font-bold mb-2">
+                                <span class="material-symbols-outlined text-xl">psychology</span>
+                                Tu Idea o Prompt Inicial
+                            </label>
+                            <p class="text-xs text-slate-400 mb-3">Escribe el concepto básico que deseas que la IA transforme en instrucciones maestras.</p>
+                            <textarea id="prompt_basico" rows="4" class="w-full bg-white/5 border border-white/10 rounded-xl p-4 text-base focus:outline-none focus:ring-2 focus:ring-indigo-500/40 text-slate-100 placeholder-slate-500 transition-all font-body resize-none custom-scroll"
+                                placeholder="Escribe aquí tu consulta inicial...">Dame un resumen del último informe de ganancias de Google.</textarea>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Botones de Acción -->
                 <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3 mt-8">
                     <button onclick="enviarPromptAGemini()" id="btn-enviar"
-                        class="flex-grow px-6 py-4 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl shadow-md transition-all active:scale-[0.98] flex items-center justify-center gap-2">
-                        <span>✨ Generar Prompt Optimizado</span>
+                        class="flex-grow px-6 py-4 bg-gradient-to-r from-indigo-500 to-violet-600 hover:from-indigo-600 hover:to-violet-700 text-white font-bold rounded-xl shadow-lg shadow-indigo-500/15 hover:scale-[1.01] active:scale-[0.98] transition-all flex items-center justify-center gap-2">
+                        <span class="material-symbols-outlined animate-pulse">auto_awesome</span>
+                        <span>Generar Prompt Optimizado</span>
                     </button>
                     <button onclick="limpiarPrompt()"
-                        class="w-full sm:w-auto px-6 py-4 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold rounded-xl transition-all">
+                        class="w-full sm:w-auto px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/5 text-slate-300 font-bold rounded-xl transition-all hover:text-white">
                         🗑️ Reiniciar
                     </button>
                 </div>
 
                 <!-- Output Section -->
-                <div id="output" class="mt-10 p-6 bg-slate-50 rounded-2xl border border-indigo-100 shadow-inner hidden">
+                <div id="output" class="mt-10 p-6 glass rounded-2xl border border-indigo-500/20 shadow-inner hidden">
                     <div class="flex flex-wrap gap-2 items-center justify-between mb-4">
-                        <h2 class="text-xl font-bold text-gray-800">✅ Prompt Estructurado</h2>
-                        <span
-                            class="text-[10px] font-bold text-indigo-500 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider border border-indigo-100">Listo
-                            para usar</span>
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-emerald-400">check_circle</span>
+                            <h2 class="text-lg font-bold text-slate-200">Prompt Estructurado</h2>
+                        </div>
+                        <span class="text-[10px] font-bold text-indigo-400 bg-indigo-500/10 px-2.5 py-1 rounded-md uppercase tracking-wider border border-indigo-500/20">Listo para usar</span>
                     </div>
-                    <div class="p-5 bg-white border border-gray-200 rounded-xl shadow-sm relative group">
-                        <pre id="prompt-final" class="text-gray-700 text-sm leading-relaxed font-sans"></pre>
+                    <div class="p-5 bg-slate-900/60 border border-white/5 rounded-xl shadow-sm relative group overflow-hidden">
+                        <div class="absolute -right-12 -top-12 w-32 h-32 bg-indigo-500/5 rounded-full blur-3xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                        <pre id="prompt-final" class="text-slate-350 text-sm leading-relaxed font-body whitespace-pre-wrap break-words min-h-[120px] text-slate-300"></pre>
                     </div>
 
-                    <div class="flex gap-3 mt-4">
+                    <div class="grid grid-cols-2 gap-3 mt-4">
                         <button onclick="copiarPrompt()"
-                            class="flex-1 px-4 py-3 bg-green-600 hover:bg-green-700 text-white font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3m2 4H10m0 0l3-3m-3 3l3 3" />
-                            </svg>
+                            class="flex items-center justify-center gap-2 py-3.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/5 text-slate-200 font-bold shadow-sm transition-all active:scale-95 text-sm hover:text-white">
+                            <span class="material-symbols-outlined text-lg">content_copy</span>
                             Copiar
                         </button>
                         <button onclick="guardarPromptEnHistorial()" id="btn-guardar"
-                            class="flex-1 px-4 py-3 bg-white border-2 border-indigo-600 text-indigo-700 hover:bg-indigo-50 font-bold rounded-xl shadow-sm transition-all flex items-center justify-center gap-2">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                            </svg>
+                            class="flex items-center justify-center gap-2 py-3.5 rounded-xl bg-indigo-500/10 border border-indigo-500/30 text-indigo-300 hover:bg-indigo-500/20 font-bold shadow-sm transition-all active:scale-95 text-sm hover:text-indigo-200">
+                            <span class="material-symbols-outlined text-lg">bookmark</span>
                             Guardar
                         </button>
                     </div>
@@ -180,22 +213,16 @@
             </div>
 
             <!-- HISTORY SIDEBAR (1/3 width) -->
-            <div
-                class="lg:col-span-1 bg-white p-6 rounded-2xl shadow-xl border border-slate-100 flex flex-col h-[600px] lg:h-auto">
-                <h3 class="text-xl font-bold text-gray-800 mb-1 flex items-center gap-2">
-                    <svg class="w-5 h-5 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
+            <div class="lg:col-span-1 glass p-6 rounded-2xl shadow-2xl flex flex-col h-[600px] lg:h-auto">
+                <h3 class="text-lg font-bold text-slate-200 mb-1 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-indigo-400">history</span>
                     Tus Prompts
                 </h3>
-                <p class="text-xs text-gray-500 mb-4">Guardados de forma segura en la nube.</p>
+                <p class="text-xs text-slate-400 mb-4 font-body">Guardados de forma segura en la nube.</p>
 
                 <div id="history-container" class="flex-1 overflow-y-auto custom-scroll pr-2 space-y-3">
                     <div class="flex items-center justify-center h-full">
-                        <div
-                            class="loader w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin">
-                        </div>
+                        <div class="loader w-6 h-6 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
                     </div>
                 </div>
             </div>
@@ -228,7 +255,11 @@
                 }
             } catch (error) {
                 console.error("Auth Error:", error);
-                document.getElementById('history-container').innerHTML = '<p class="text-sm text-red-500 text-center">Error de conexión.</p>';
+                document.getElementById('history-container').innerHTML = `
+                    <div class="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-red-500/20 rounded-xl bg-red-950/5">
+                        <span class="material-symbols-outlined text-red-400 text-3xl mb-2">cloud_off</span>
+                        <p class="text-xs text-red-400 font-medium">Error de conexión.</p>
+                    </div>`;
             }
         };
 
@@ -253,7 +284,7 @@
             if (!finalPrompt) return;
 
             btn.disabled = true;
-            btn.innerHTML = `<svg class="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Guardando...`;
+            btn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">sync</span> <span>Guardando...</span>`;
 
             try {
                 await addDoc(collection(db, 'artifacts', appId, 'users', currentUser.uid, 'saved_prompts'), {
@@ -267,7 +298,7 @@
                 showCustomAlert("Error al guardar.", "error");
             } finally {
                 btn.disabled = false;
-                btn.innerHTML = `<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"/></svg> Guardar`;
+                btn.innerHTML = `<span class="material-symbols-outlined text-lg">bookmark</span> <span>Guardar</span>`;
             }
         };
 
@@ -292,10 +323,10 @@
             unsubscribeHistory = onSnapshot(promptsRef, (snapshot) => {
                 if (snapshot.empty) {
                     historyContainer.innerHTML = `
-                    <div class="h-full flex flex-col items-center justify-center text-center p-6 border-2 border-dashed border-slate-200 rounded-xl">
-                        <span class="text-3xl mb-2">👻</span>
-                        <p class="text-sm text-slate-500 font-medium">No tienes prompts guardados aún.</p>
-                        <p class="text-xs text-slate-400 mt-1">Tus optimizaciones aparecerán aquí.</p>
+                    <div class="h-full flex flex-col items-center justify-center text-center p-6 border border-dashed border-white/10 rounded-xl bg-white/[0.01]">
+                        <span class="material-symbols-outlined text-3xl text-slate-600 mb-2">folder_open</span>
+                        <p class="text-xs text-slate-400 font-medium">Historial vacío</p>
+                        <p class="text-[10px] text-slate-500 mt-1">Las optimizaciones guardadas aparecerán aquí.</p>
                     </div>`;
                     return;
                 }
@@ -308,25 +339,25 @@
 
                 docs.forEach(data => {
                     const item = document.createElement('div');
-                    item.className = "bg-slate-50 p-4 rounded-xl border border-slate-100 relative group hover:border-indigo-300 transition-colors fade-in";
+                    item.className = "glass p-4 rounded-xl relative group hover:border-indigo-500/30 hover:bg-white/[0.01] transition-all duration-300 fade-in";
 
                     // Truncate logic
                     const truncatedPrompt = data.prompt.length > 80 ? data.prompt.substring(0, 80) + '...' : data.prompt;
 
                     item.innerHTML = `
                     <div class="flex justify-between items-start mb-1">
-                        <span class="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Idea base</span>
-                        <button onclick="eliminarPrompt('${data.id}')" class="text-slate-300 hover:text-red-500 transition-colors opacity-0 group-hover:opacity-100" title="Eliminar">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                        <span class="text-[9px] font-bold text-slate-500 uppercase tracking-widest">Idea base</span>
+                        <button onclick="eliminarPrompt('${data.id}')" class="text-slate-500 hover:text-red-400 transition-colors opacity-0 group-hover:opacity-100 flex items-center" title="Eliminar">
+                            <span class="material-symbols-outlined text-base">delete</span>
                         </button>
                     </div>
-                    <p class="text-xs font-bold text-slate-700 line-clamp-1 mb-2">${data.idea}</p>
-                    <div class="bg-white p-2 rounded text-[11px] text-slate-500 border border-slate-100 italic">
+                    <p class="text-xs font-bold text-slate-200 line-clamp-1 mb-2">${data.idea}</p>
+                    <div class="bg-slate-900/40 p-2.5 rounded text-[11px] text-slate-400 border border-white/5 italic">
                         "${truncatedPrompt}"
                     </div>
                     <div class="mt-3 flex gap-2">
-                        <button onclick="cargarEnPantalla('${data.id}')" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2 py-1 rounded">Ver/Usar</button>
-                        <button onclick="copiarSilencioso('${data.id}')" class="text-xs font-bold text-slate-500 hover:text-slate-700 bg-slate-200 px-2 py-1 rounded">Copiar</button>
+                        <button onclick="cargarEnPantalla('${data.id}')" class="text-xs font-bold text-indigo-400 hover:text-indigo-350 bg-indigo-500/10 px-2.5 py-1 rounded transition-all hover:bg-indigo-500/20">Ver/Usar</button>
+                        <button onclick="copiarSilencioso('${data.id}')" class="text-xs font-bold text-slate-400 hover:text-slate-355 bg-white/5 px-2.5 py-1 rounded transition-all hover:bg-white/10">Copiar</button>
                     </div>
                     <div id="full-data-${data.id}" class="hidden">${encodeURIComponent(data.prompt)}</div>
                 `;
@@ -342,9 +373,10 @@
             const encodedText = document.getElementById(`full-data-${id}`).textContent;
             const text = decodeURIComponent(encodedText);
             document.getElementById('prompt-final').textContent = text;
-            document.getElementById('output').classList.remove('hidden');
-            document.getElementById('output').classList.add('fade-in');
-            window.scrollTo({ top: document.getElementById('output').offsetTop - 50, behavior: 'smooth' });
+            const outputEl = document.getElementById('output');
+            outputEl.classList.remove('hidden');
+            outputEl.classList.add('fade-in');
+            outputEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
         };
 
         window.copiarSilencioso = (id) => {
@@ -373,6 +405,13 @@ REGLAS CRÍTICAS:
 3. LENGUAJE: Debe ser claro, imperativo y profesional.
 4. SALIDA: Entrega ÚNICAMENTE el texto del nuevo prompt mejorado. No añadas "Aquí tienes tu prompt" ni introducciones.
 5. IDIOMA: Español.`;
+
+        // Apply Preset Helper
+        window.aplicarPreset = function (textoPreset) {
+            const systemPromptEl = document.getElementById('system_prompt');
+            systemPromptEl.value = textoPreset;
+            showCustomAlert("Preset de optimización aplicado");
+        };
 
         async function fetchWithBackoff(url, options, retries = 5, delay = 1000) {
             for (let i = 0; i < retries; i++) {
@@ -409,7 +448,14 @@ REGLAS CRÍTICAS:
 
             outputContainer.classList.remove('hidden');
             btn.disabled = true;
-            outputText.innerHTML = '<div class="flex items-center justify-center py-12"><svg class="animate-spin h-8 w-8 text-indigo-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg></div>';
+            btn.innerHTML = `<span class="material-symbols-outlined text-sm animate-spin">sync</span> <span>Optimizando...</span>`;
+            
+            outputText.innerHTML = `
+                <div class="flex flex-col items-center justify-center py-10 gap-3">
+                    <span class="material-symbols-outlined text-4xl text-indigo-400 animate-spin">sync</span>
+                    <p class="text-xs text-slate-400">Refinando instrucciones...</p>
+                </div>
+            `;
 
             const combinedSystemInstruction = customSystem
                 ? `${DEFAULT_SYSTEM_PROMPT}\n\nADICIONAL: El usuario quiere estas mejoras específicas: ${customSystem}`
@@ -447,6 +493,7 @@ REGLAS CRÍTICAS:
                 showCustomAlert("Error al generar.", "error");
             } finally {
                 btn.disabled = false;
+                btn.innerHTML = `<span class="material-symbols-outlined animate-pulse">auto_awesome</span> <span>Generar Prompt Optimizado</span>`;
             }
         }
 
@@ -478,9 +525,13 @@ REGLAS CRÍTICAS:
 
             const alert = document.createElement('div');
             alert.id = 'custom-toast';
-            const color = type === "error" ? "bg-red-600" : "bg-slate-800";
-            alert.className = `fixed bottom-8 left-1/2 -translate-x-1/2 ${color} text-white px-6 py-3 rounded-full shadow-2xl z-50 fade-in font-medium text-sm flex items-center gap-2`;
-            alert.innerHTML = type === "error" ? `⚠️ ${msg}` : msg;
+            const border = type === "error" ? "border-red-500/30" : "border-indigo-500/30";
+            const bg = type === "error" ? "bg-red-950/80" : "bg-slate-900/80";
+            const icon = type === "error" ? "error" : "check_circle";
+            const iconColor = type === "error" ? "text-red-400" : "text-indigo-400";
+            
+            alert.className = `fixed bottom-8 left-1/2 -translate-x-1/2 ${bg} backdrop-blur-md border ${border} text-slate-200 px-5 py-3 rounded-xl shadow-2xl z-[100] fade-in font-medium text-sm flex items-center gap-2.5`;
+            alert.innerHTML = `<span class="material-symbols-outlined ${iconColor} text-lg">${icon}</span> ${msg}`;
 
             document.body.appendChild(alert);
 

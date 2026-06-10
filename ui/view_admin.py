@@ -66,9 +66,6 @@ def renderizar_vista_admin(rol_usuario):
         # 4. Barra de Filtros Horizontal Premium (reemplaza controles incómodos de sidebar)
         datos_filtrados = renderizar_barra_filtros(datos_unificados, key_prefix="admin_app", mostrar_flete=(rol_usuario != 'basico'))
 
-        st.sidebar.markdown("---")
-        st.sidebar.success("🟢 ATHENEA Inference Engine: Activo")
-
         st.markdown("---")
 
         tab_operativo, tab_urgentes, tab_predicciones = st.tabs([

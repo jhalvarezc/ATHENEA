@@ -28,6 +28,19 @@ if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True):
 st.sidebar.markdown('</div>', unsafe_allow_html=True)
 st.sidebar.markdown("---")
 
+# Tarjeta de Estado del Motor de Inferencia (Diseño Premium & Animación Pulse)
+st.sidebar.markdown("""
+<div class="engine-status-card">
+    <div class="pulse-container">
+        <span class="pulse-dot"></span>
+    </div>
+    <div class="status-details">
+        <span class="status-title">Motor de Inferencia</span>
+        <span class="status-name">ATHENEA : Activo</span>
+    </div>
+</div>
+""", unsafe_allow_html=True)
+
 # ==========================================
 # 🎛️ CONTROL DE VISTAS POR ROL
 # ==========================================
