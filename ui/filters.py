@@ -59,7 +59,8 @@ def renderizar_barra_filtros(df, key_prefix="app", mostrar_flete=True):
                 "🔍 Buscar guía / remisión:",
                 "",
                 key=f"{key_prefix}_search_input",
-                placeholder="Escribe código de guía..."
+                placeholder="Escribe código de guía...",
+                help="Ingresa el número de guía exacto para localizar un envío específico."
             ).strip()
 
         with col_estado:
@@ -70,7 +71,8 @@ def renderizar_barra_filtros(df, key_prefix="app", mostrar_flete=True):
                 options=list(estados_map.keys()),
                 default=[],
                 placeholder="Todos",
-                key=f"{key_prefix}_multisel_estados"
+                key=f"{key_prefix}_multisel_estados",
+                help="Filtra los envíos según su estado actual en la operación logística."
             )
             estados_sel = [estados_map[e] for e in estados_sel_amigables]
 
@@ -82,7 +84,8 @@ def renderizar_barra_filtros(df, key_prefix="app", mostrar_flete=True):
                 options=list(destinos_map.keys()),
                 default=[],
                 placeholder="Todos",
-                key=f"{key_prefix}_multisel_destinos"
+                key=f"{key_prefix}_multisel_destinos",
+                help="Selecciona una o más ciudades para ver los envíos dirigidos a esos destinos."
             )
             destinos_sel = [destinos_map[d] for d in destinos_sel_amigables]
 
@@ -94,7 +97,8 @@ def renderizar_barra_filtros(df, key_prefix="app", mostrar_flete=True):
                 options=list(fuentes_map.keys()),
                 default=[],
                 placeholder="Todos",
-                key=f"{key_prefix}_multisel_fuentes"
+                key=f"{key_prefix}_multisel_fuentes",
+                help="Filtra los datos por la fuente de origen, como histórico CSV o cargues de Excel."
             )
             fuentes_sel = [fuentes_map[f] for f in fuentes_sel_amigables]
 
@@ -109,7 +113,8 @@ def renderizar_barra_filtros(df, key_prefix="app", mostrar_flete=True):
                     0,
                     max_flete,
                     0,
-                    key=f"{key_prefix}_slider_flete"
+                    key=f"{key_prefix}_slider_flete",
+                    help="Desliza para ver envíos cuyo costo de flete es mayor al valor seleccionado."
                 )
 
     # Aplicar filtros al DataFrame

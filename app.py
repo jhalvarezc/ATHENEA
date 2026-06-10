@@ -21,7 +21,7 @@ rol_usuario = requerir_autenticacion()
 # Botón de cierre de sesión en la barra lateral
 st.sidebar.markdown(f"**Rol actual:** `{st.session_state.get('rol')}`")
 st.sidebar.markdown('<div class="logout-btn-container">', unsafe_allow_html=True)
-if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True):
+if st.sidebar.button("🔓 Cerrar Sesión", use_container_width=True, help="Cierra tu sesión actual y vuelve a la pantalla de inicio"):
     st.session_state["usuario_autenticado"] = False
     st.session_state["rol"] = None
     st.rerun()
