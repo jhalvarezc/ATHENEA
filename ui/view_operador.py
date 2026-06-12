@@ -80,7 +80,7 @@ def renderizar_vista_operador():
         col_confirm, col_deny = st.columns(2)
         with col_confirm:
             st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
-            if st.button("✅ Confirmar cargue", type="primary", use_container_width=True):
+            if st.button("✅ Confirmar cargue", type="primary", use_container_width=True, help="Confirma y procesa los datos cargados en el archivo Excel."):
                 registros_editados = df_editado.to_dict(orient='records')
                 exitos = 0
                 
@@ -135,7 +135,7 @@ def renderizar_vista_operador():
                 
         with col_deny:
             st.markdown('<div class="deny-btn-container">', unsafe_allow_html=True)
-            if st.button("❌ Denegar cargue", type="secondary", use_container_width=True):
+            if st.button("❌ Denegar cargue", type="secondary", use_container_width=True, help="Cancela el proceso de carga y descarta los datos preliminares."):
                 st.session_state['excel_preliminar'] = None
                 st.session_state['last_uploaded_file_key'] = None
                 st.info("Cargue preliminar denegado.")
