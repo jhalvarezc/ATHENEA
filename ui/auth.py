@@ -141,9 +141,9 @@ def requerir_autenticacion():
 
         with st.form("login_form"):
             st.markdown("<p style='text-align:center; font-size:1.1rem; font-weight:700; margin-bottom:15px; color:#ffffff;'>🔐 AUTENTICACIÓN LOGÍSTICA</p>", unsafe_allow_html=True)
-            username = st.text_input("Usuario", placeholder="Ingresa tu usuario...")
-            password = st.text_input("Contraseña", type="password", placeholder="Ingresa tu contraseña...")
-            submit = st.form_submit_button("Ingresar", use_container_width=True)
+            username = st.text_input("Usuario", placeholder="Ingresa tu usuario...", help="Ingresa tu nombre de usuario para acceder al sistema.")
+            password = st.text_input("Contraseña", type="password", placeholder="Ingresa tu contraseña...", help="Ingresa tu contraseña de acceso.")
+            submit = st.form_submit_button("Ingresar", use_container_width=True, help="Haz clic para iniciar sesión en ATHENEA.")
             
             if submit:
                 user_info = USUARIOS.get(username)
