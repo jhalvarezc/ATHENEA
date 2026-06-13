@@ -81,7 +81,7 @@ def renderizar_vista_admin(rol_usuario):
 
             with st.container(border=True):
                 if list_guias:
-                    guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias)
+                    guia_seleccionada = st.selectbox("🎯 Selecciona una guía para trazar ruta detallada:", list_guias, help="Elige el identificador de la guía para visualizar su recorrido estimado en el mapa.")
                     fila_guia = datos_filtrados[datos_filtrados['guia'] == guia_seleccionada].iloc[0]
                     
                     flete_info = f" | **Flete:** ${fila_guia['costo_flete']:,} COP" if rol_usuario != 'basico' else ""
