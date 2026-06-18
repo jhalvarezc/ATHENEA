@@ -5,3 +5,7 @@
 ## 2024-05-15 - Streamlit Help Tooltips for Natively Generated Components
 **Learning:** Streamlit creates accessible and intuitive UI elements from basic Python code. The `help` parameter is a highly effective, built-in way to add contextual tooltips, acting as a reusable UX pattern for clarifying inputs to users and acting as ARIA labels for screen readers.
 **Action:** Use the `help` argument on Streamlit input widgets (`text_input`, `multiselect`, `slider`, `button`, etc.) to provide context, especially when dealing with complex filters or forms.
+
+## 2026-06-18 - Native Streamlit tooltips for Accessibility
+**Learning:** Streamlit's `help` parameter on input widgets acts as both an interactive hover tooltip for sighted users and native ARIA labels for screen readers. It allows us to add accessibility without complex custom HTML components in the dashboard.
+**Action:** Consistently use the `help` parameter on interactive elements like `st.button` and `st.text_input` to improve the accessibility and UX seamlessly.
