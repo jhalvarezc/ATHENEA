@@ -121,7 +121,11 @@ if rol_usuario == "basico":
     if 'last_uploaded_file_key' not in st.session_state:
         st.session_state['last_uploaded_file_key'] = None
         
-    uploaded_file = st.file_uploader("Selecciona un archivo Excel", type=["xlsx", "xls"])
+    uploaded_file = st.file_uploader(
+        "Selecciona un archivo Excel",
+        type=["xlsx", "xls"],
+        help="Sube tu archivo de transporte en formato Excel (.xlsx o .xls) para su ingesta."
+    )
     
     if uploaded_file is not None:
         file_key = f"parsed_{uploaded_file.name}_{uploaded_file.size}"
@@ -155,7 +159,12 @@ if rol_usuario == "basico":
         col_confirm, col_deny = st.columns(2)
         with col_confirm:
             st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
-            if st.button("✅ Confirmar cargue", type="primary", use_container_width=True):
+            if st.button(
+                "✅ Confirmar cargue",
+                type="primary",
+                use_container_width=True,
+                help="Procesa e ingesta los datos cargados. Se auditarán a través del motor de inferencia."
+            ):
                 registros_editados = df_editado.to_dict(orient='records')
                 exitos = 0
                 
@@ -192,7 +201,12 @@ if rol_usuario == "basico":
                 
         with col_deny:
             st.markdown('<div class="deny-btn-container">', unsafe_allow_html=True)
-            if st.button("❌ Denegar cargue", type="secondary", use_container_width=True):
+            if st.button(
+                "❌ Denegar cargue",
+                type="secondary",
+                use_container_width=True,
+                help="Cancela el proceso actual y descarta los datos cargados de la memoria."
+            ):
                 st.session_state['excel_preliminar'] = None
                 st.session_state['last_uploaded_file_key'] = None
                 st.info("Cargue preliminar denegado.")
@@ -215,11 +229,19 @@ elif rol_usuario == "admin":
         
         st.markdown("#### 📊 Importación desde Excel")
         st.write("Sube un archivo `.xlsx` o `.xls` para normalizar y auditar su contenido.")
-        uploaded_file = st.file_uploader("Selecciona un archivo Excel", type=["xlsx", "xls"])
+        uploaded_file = st.file_uploader(
+            "Selecciona un archivo Excel",
+            type=["xlsx", "xls"],
+            help="Sube un archivo Excel (.xlsx/.xls) para procesar sus guías."
+        )
         
         if uploaded_file is not None:
             st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
-            if st.button("🚀 Ingestar y Auditar Excel", use_container_width=True):
+            if st.button(
+                "🚀 Ingestar y Auditar Excel",
+                use_container_width=True,
+                help="Inicia el proceso de validación lógica de los datos cargados a través del motor."
+            ):
                 try:
                     registros = parsear_excel(uploaded_file)
                     exitos = 0
@@ -275,7 +297,12 @@ elif rol_usuario == "admin":
             
             with col_app:
                 st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
-                if st.button("✅ Aprobar e Inyectar al Dashboard", type="primary", use_container_width=True):
+                if st.button(
+                    "✅ Aprobar e Inyectar al Dashboard",
+                    type="primary",
+                    use_container_width=True,
+                    help="Guarda las guías seleccionadas en la base de datos principal para que sean visibles en el panel de control."
+                ):
                     for idx, row in df_editado_visual.iterrows():
                         if idx in df_pendientes.index:
                             for col in ['origen', 'destino', 'costo_flete']:
@@ -316,7 +343,12 @@ elif rol_usuario == "admin":
     
             with col_dec:
                 st.markdown('<div class="deny-btn-container">', unsafe_allow_html=True)
-                if st.button("🗑️ Descartar Sala de Espera", type="secondary", use_container_width=True):
+                if st.button(
+                    "🗑️ Descartar Sala de Espera",
+                    type="secondary",
+                    use_container_width=True,
+                    help="Elimina todos los registros pendientes de revisión sin afectar los históricos."
+                ):
                     limpiar_pendientes()
                     st.info("Sala de espera vaciada sin afectar históricos.")
                     st.rerun()
