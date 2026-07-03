@@ -20,7 +20,11 @@ def renderizar_vista_operador():
         st.session_state['last_uploaded_file_key'] = None
         
     # Componente de carga centralizado
-    uploaded_file = st.file_uploader("📊 Selecciona un archivo Excel", type=["xlsx", "xls"])
+    uploaded_file = st.file_uploader(
+        "📊 Selecciona un archivo Excel",
+        type=["xlsx", "xls"],
+        help="Sube el archivo con formato .xlsx o .xls con los datos de las guías de transporte a auditar"
+    )
     
     if uploaded_file is not None:
         file_key = f"parsed_{uploaded_file.name}_{uploaded_file.size}"
@@ -80,7 +84,7 @@ def renderizar_vista_operador():
         col_confirm, col_deny = st.columns(2)
         with col_confirm:
             st.markdown('<div class="confirm-btn-container">', unsafe_allow_html=True)
-            if st.button("✅ Confirmar cargue", type="primary", use_container_width=True):
+            if st.button("✅ Confirmar cargue", type="primary", use_container_width=True, help="Audita los registros mediante inteligencia artificial y los guarda definitivamente en el sistema"):
                 registros_editados = df_editado.to_dict(orient='records')
                 exitos = 0
                 
@@ -135,7 +139,7 @@ def renderizar_vista_operador():
                 
         with col_deny:
             st.markdown('<div class="deny-btn-container">', unsafe_allow_html=True)
-            if st.button("❌ Denegar cargue", type="secondary", use_container_width=True):
+            if st.button("❌ Denegar cargue", type="secondary", use_container_width=True, help="Cancela el proceso, descarta los datos y limpia la tabla de revisión"):
                 st.session_state['excel_preliminar'] = None
                 st.session_state['last_uploaded_file_key'] = None
                 st.info("Cargue preliminar denegado.")
